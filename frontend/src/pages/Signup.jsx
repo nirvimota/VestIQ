@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import SignupForm from '../components/auth/SignupForm';
 
 export default function Signup() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSignup = async ({ email, password, fullName }) => {
     setError('');
     setLoading(true);
-    const { error } = await signUp(email, password);
+
+    const { error } = await signUp(email, password, { fullName });
     setLoading(false);
+
     if (error) {
       setError(error.message);
       return;
@@ -24,47 +25,65 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-ink flex items-center justify-center px-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-surface border border-border rounded-2xl p-8">
-        <h1 className="font-display text-2xl text-bone mb-1">Create your account</h1>
-        <p className="text-slate text-sm mb-6">Start investing in NSE &amp; BSE stocks</p>
+    <div className="auth-bg flex items-center justify-center px-6 py-12">
+      {/* Ambient Orbs */}
+      <div className="orb orb-gold w-80 h-80 -top-24 -right-16" />
+      <div className="orb orb-teal w-64 h-64 -bottom-20 -left-16" />
 
-        {error && <p className="text-coral text-sm mb-4 font-mono">{error}</p>}
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="glass-card rounded-2xl p-8 sm:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <motion.h1
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="font-display text-3xl text-bone tracking-tight"
+            >
+              Create your account
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-slate text-sm mt-2"
+            >
+              Start investing in NSE &amp; BSE stocks
+            </motion.p>
+          </div>
 
-        <label className="block text-xs text-slate mb-1">Email</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 rounded-lg bg-ink border border-border px-3 py-2 text-bone text-sm outline-none focus:border-teal"
-          placeholder="you@example.com"
-        />
+          {/* Signup Form */}
+          <SignupForm
+            onSubmit={handleSignup}
+            loading={loading}
+            error={error}
+          />
 
-        <label className="block text-xs text-slate mb-1">Password</label>
-        <input
-          type="password"
-          required
-          minLength={8}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-6 rounded-lg bg-ink border border-border px-3 py-2 text-bone text-sm outline-none focus:border-teal"
-          placeholder="At least 8 characters"
-        />
+          {/* Footer Link */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-slate text-sm text-center mt-6"
+          >
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="text-teal hover:text-teal/80 transition-colors font-medium"
+            >
+              Sign in
+            </Link>
+          </motion.p>
+        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-full bg-gold text-ink font-medium py-2.5 text-sm hover:bg-[#f0c665] transition-colors disabled:opacity-60"
-        >
-          {loading ? 'Creating account...' : 'Create account'}
-        </button>
-
-        <p className="text-slate text-sm text-center mt-5">
-          Already have an account?{' '}
-          <Link to="/login" className="text-teal hover:underline">Log in</Link>
-        </p>
-      </form>
+        {/* Subtle bottom glow */}
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 rounded-full bg-teal/5 blur-2xl pointer-events-none" />
+      </motion.div>
     </div>
   );
 }

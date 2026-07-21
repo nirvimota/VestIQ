@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ──────────────────────────────────────────── */
 html, body, #root {
   height: 100%;
   background-color: #0a0d12;
@@ -10,4 +11,212 @@ html, body, #root {
 body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animated Gradient Background ─────────────────── */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.auth-bg {
+  position: relative;
+  min-height: 100vh;
+  background: #0a0d12;
+  overflow: hidden;
+}
+
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(63, 214, 192, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 70%, rgba(232, 184, 75, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(63, 214, 192, 0.04) 0%, transparent 60%);
+  animation: gradient-shift 12s ease-in-out infinite;
+  background-size: 200% 200%;
+  pointer-events: none;
+}
+
+/* ── Glassmorphism Card ───────────────────────────── */
+.glass-card {
+  background: rgba(19, 24, 32, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Floating Orbs (ambient decoration) ───────────── */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.05); }
+  66%      { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+  animation: float-orb 8s ease-in-out infinite;
+}
+
+.orb-teal {
+  background: rgba(63, 214, 192, 0.15);
+}
+
+.orb-gold {
+  background: rgba(232, 184, 75, 0.12);
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+
+/* ── Auth Input Styling ───────────────────────────── */
+.auth-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: rgba(10, 13, 18, 0.6);
+  border: 1px solid rgba(22, 27, 34, 0.8);
+  padding: 0.75rem 1rem;
+  color: #ECEEF0;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: rgba(139, 150, 165, 0.6);
+}
+
+.auth-input:focus {
+  border-color: rgba(63, 214, 192, 0.5);
+  box-shadow: 0 0 0 3px rgba(63, 214, 192, 0.08);
+}
+
+.auth-input.error {
+  border-color: rgba(229, 72, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.08);
+}
+
+/* ── Auth Button ──────────────────────────────────── */
+.auth-btn {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn-primary {
+  background: linear-gradient(135deg, #e8b84b, #d4a43c);
+  color: #0a0d12;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0c665, #e8b84b);
+  box-shadow: 0 4px 20px rgba(232, 184, 75, 0.25);
+  transform: translateY(-1px);
+}
+
+.auth-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Password Strength Bar ────────────────────────── */
+.strength-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(22, 27, 34, 0.6);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* ── Divider ──────────────────────────────────────── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(139, 150, 165, 0.5);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(22, 27, 34, 0.8);
+}
+
+/* ── Floating Label Effect ────────────────────────── */
+.input-group {
+  position: relative;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #8B96A5;
+  margin-bottom: 0.375rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ── Password Toggle Button ───────────────────────── */
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #8B96A5;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #ECEEF0;
+}
+
+/* ── Spinner ──────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(10, 13, 18, 0.3);
+  border-top-color: #0a0d12;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
 }

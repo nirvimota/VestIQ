@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as THREE from 'three';
 
 // ---------------------------------------------------------------------------
@@ -215,12 +216,12 @@ export default function HeroSection() {
           vest<span className="text-[#e8b84b]">IQ</span>
         </span>
         <nav className="flex items-center gap-3 md:gap-5">
-          <button className="viq-body hidden sm:inline text-sm text-[#8B96A5] hover:text-[#ECEEF0] transition-colors">
+          <Link to="/login" className="viq-body hidden sm:inline text-sm text-[#8B96A5] hover:text-[#ECEEF0] transition-colors">
             Log in
-          </button>
-          <button className="viq-body text-sm px-4 py-2 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors">
+          </Link>
+          <Link to="/signup" className="viq-body text-sm px-4 py-2 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors">
             Get started
-          </button>
+          </Link>
         </nav>
       </header>
 
@@ -275,12 +276,12 @@ export default function HeroSection() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <button className="viq-body text-sm px-5 py-2.5 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors">
+              <Link to="/signup" className="viq-body text-sm px-5 py-2.5 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors">
                 Start investing
-              </button>
-              <button className="viq-body text-sm px-5 py-2.5 rounded-full border border-[#2A3138] text-[#ECEEF0] hover:border-[#3fd6c0] transition-colors">
+              </Link>
+              <Link to="/login" className="viq-body text-sm px-5 py-2.5 rounded-full border border-[#2A3138] text-[#ECEEF0] hover:border-[#3fd6c0] transition-colors">
                 Explore live markets
-              </button>
+              </Link>
             </div>
           </div>
 

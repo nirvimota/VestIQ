@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from './env.js';
 
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_ANON_KEY;
-
-const supabase = createClient(url, key);
+// Backend uses the service-role key for admin operations
+// (verifying JWTs, managing users, bypassing RLS when needed).
+const supabase = createClient(env.supabaseUrl, env.supabaseServiceRoleKey);
 
 export default supabase;
