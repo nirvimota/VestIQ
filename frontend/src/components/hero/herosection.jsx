@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
 // vestIQ — Hero Section v2
@@ -381,15 +382,21 @@ export default function HeroSection() {
       {/* top nav */}
       <header className="fixed top-0 inset-x-0 z-30 flex items-center justify-between px-6 md:px-10 py-5">
         <span className="viq-display text-[#ECEEF0] text-xl tracking-tight">
-          vest<span className="text-[#e8b84b]">IQ</span>
+          Vest<span className="text-[#e8b84b]">IQ</span>
         </span>
         <nav className="flex items-center gap-3 md:gap-5">
-          <button className="viq-body hidden sm:inline text-sm text-[#8B96A5] hover:text-[#ECEEF0] transition-colors">
+          <Link
+            to="/login"
+            className="viq-body hidden sm:inline text-sm text-[#8B96A5] hover:text-[#ECEEF0] transition-colors"
+          >
             Log in
-          </button>
-          <button className="viq-body text-sm px-4 py-2 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors">
+          </Link>
+          <Link
+            to="/signup"
+            className="viq-body text-sm px-4 py-2 rounded-full bg-[#e8b84b] text-[#0a0d12] font-medium hover:bg-[#f0c665] transition-colors"
+          >
             Get started
-          </button>
+          </Link>
         </nav>
       </header>
 

@@ -66,7 +66,7 @@ export default function SignupForm({ onSubmit, loading, error }) {
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="auth-input pl-10"
+            className="auth-input"
             placeholder="John Doe"
             autoComplete="name"
           />
