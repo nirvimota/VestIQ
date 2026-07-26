@@ -1,39 +1,24 @@
 import React, { useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Search,
   Bell,
   ChevronDown,
   Expand,
-  Home,
-  LineChart as LineChartIcon,
-  ListChecks,
-  ShieldCheck,
-  Send,
   Wallet,
-  BellRing,
-  Users,
-  Settings,
   ArrowUpRight,
 } from 'lucide-react';
+import Sidebar from '../components/layout/Sidebar';
+import AmbientBackground from '../components/layout/AmbientBackground';
 
 // ---------------------------------------------------------------------------
-// vestIQ — Dashboard v5 ("bento" layout)
-// Adapted from a CRM-style bento dashboard: many small, self-contained cards
-// with varied chart types (line, semicircle gauge, multi-ring radial, bar)
-// rather than a few large sections. Same navy/teal token system as v4 so the
-// two stay in the same product family; this pass is about layout density and
-// chart variety, not a new palette.
+// vestIQ — Dashboard v5.1
+// Same bento layout as before, now on the shared Sidebar (fixes the
+// undeclared `location` bug that was in every page's inline sidebar copy)
+// plus: ambient animated background, hover-lift + border-glow on every card,
+// and a tap-scale on interactive elements for a more "alive" feel.
 // ---------------------------------------------------------------------------
-
-const NAV_ITEMS = [
-  { label: 'Overview', icon: Home, to: '/dashboard' },
-  { label: 'Portfolio', icon: LineChartIcon, to: '/portfolio' },
-  { label: 'Watchlist', icon: ListChecks, to: '/watchlist' },
-  { label: 'Orders', icon: Send, to: '/orders' },
-  { label: 'Alerts', icon: Bell, to: '/alerts' },
-  { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
-];
 
 const INK = '#0A0F1A';
 const CARD = '#111826';
@@ -67,11 +52,19 @@ function SemiGauge({ value, max = 100, size = 160, color = TEAL, label }) {
   const angle = Math.PI * (value / max);
   const x2 = cx - r * Math.cos(angle);
   const y2 = cy - r * Math.sin(angle);
-  const large = angle > Math.PI / 2 ? 1 : 0;
   return (
     <svg width={size} height={size / 1.7} viewBox={`0 0 ${size} ${size / 1.7}`}>
       <path d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${cx + r},${cy}`} fill="none" stroke={BORDER} strokeWidth="12" strokeLinecap="round" />
-      <path d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${x2},${y2}`} fill="none" stroke={color} strokeWidth="12" strokeLinecap="round" />
+      <motion.path
+        d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${x2},${y2}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="12"
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1, ease: 'easeOut' }}
+      />
       <text x="50%" y="82%" textAnchor="middle" fill={TEXT} fontSize="26" fontWeight="700" fontFamily="'Space Grotesk', sans-serif">
         {value}
       </text>
@@ -96,7 +89,7 @@ function RadialStack({ rings, size = 150, center }) {
         return (
           <g key={ring.label}>
             <circle cx={cx} cy={cy} r={r} fill="none" stroke={BORDER} strokeWidth="9" />
-            <circle
+            <motion.circle
               cx={cx}
               cy={cy}
               r={r}
@@ -104,7 +97,9 @@ function RadialStack({ rings, size = 150, center }) {
               stroke={ring.color}
               strokeWidth="9"
               strokeDasharray={c}
-              strokeDashoffset={offset}
+              initial={{ strokeDashoffset: c }}
+              animate={{ strokeDashoffset: offset }}
+              transition={{ duration: 1, delay: i * 0.15, ease: 'easeOut' }}
               strokeLinecap="round"
               transform={`rotate(-90 ${cx} ${cy})`}
             />
@@ -120,9 +115,10 @@ function RadialStack({ rings, size = 150, center }) {
   );
 }
 
-export default function Dashboard() {
-  const location = useLocation();
+const cardHover = { y: -3, borderColor: 'rgba(255,255,255,0.16)' };
+const cardTransition = { type: 'spring', stiffness: 300, damping: 24 };
 
+export default function Dashboard() {
   const portfolioSpark = useMemo(() => linePath([58, 62, 60, 66, 70, 68, 74, 78, 76, 83], 200, 60), []);
   const activitySpark = useMemo(() => linePath([12, 18, 14, 22, 30, 26, 35], 240, 70), []);
 
@@ -133,7 +129,7 @@ export default function Dashboard() {
   ];
 
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const PNL_BARS = [30, 45, 20, 70, 55, 15, 10]; // % height
+  const PNL_BARS = [30, 45, 20, 70, 55, 15, 10];
 
   const TOP_MOVERS = [
     { label: 'RELIANCE', pct: 78, color: TEAL },
@@ -142,58 +138,32 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="v5-root min-h-screen flex" style={{ background: INK }}>
+    <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
         .v5-display { font-family: 'Space Grotesk', sans-serif; }
         .v5-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
         .v5-body { font-family: 'Inter', sans-serif; }
-        .v5-card { background: ${CARD}; border: 1px solid ${BORDER}; }
+        .v5-card { background: ${CARD}; border: 1px solid ${BORDER}; transition: border-color 0.2s ease; }
+        .v5-icon-btn { transition: transform 0.15s ease, background 0.15s ease; }
+        .v5-icon-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.03); }
+        .v5-icon-btn:active { transform: translateY(0) scale(0.94); }
       `}</style>
 
-      {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 shrink-0 px-4 py-6" style={{ borderRight: `1px solid ${BORDER}` }}>
-        <Link to="/dashboard" className="v5-display text-lg tracking-tight px-2 flex items-center gap-2" style={{ color: TEXT }}>
-          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: TEAL, color: INK }}>
-            V
-          </span>
-          vest<span style={{ color: '#e8b84b' }}>IQ</span>
-        </Link>
-        <nav className="mt-8 flex flex-col gap-1">
-          {NAV_ITEMS.map(({ label, icon: Icon, to }) => {
-            const active = location.pathname === to;
-            return (
-              <Link
-                key={label}
-                to={to}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl v5-body text-sm transition-colors"
-                style={{ color: active ? INK : SUB, background: active ? TEAL : 'transparent' }}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-auto">
-          <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-xl v5-body text-sm" style={{ color: SUB }}>
-            <Settings size={16} />
-            Settings
-          </Link>
-        </div>
-      </aside>
+      <AmbientBackground opacity={0.13} />
+      <Sidebar />
 
       {/* Main */}
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 relative">
         <div className="max-w-6xl mx-auto px-6 lg:px-10 py-7">
           {/* top bar */}
           <div className="flex items-center justify-between">
             <h1 className="v5-display text-xl" style={{ color: TEXT }}>Dashboard</h1>
             <div className="flex items-center gap-3">
-              <button className="v5-card w-9 h-9 rounded-full flex items-center justify-center" style={{ color: SUB }}>
+              <button className="v5-card v5-icon-btn w-9 h-9 rounded-full flex items-center justify-center" style={{ color: SUB }}>
                 <Search size={15} />
               </button>
-              <button className="v5-card w-9 h-9 rounded-full flex items-center justify-center" style={{ color: SUB }}>
+              <button className="v5-card v5-icon-btn w-9 h-9 rounded-full flex items-center justify-center" style={{ color: SUB }}>
                 <Bell size={15} />
               </button>
               <div className="flex items-center gap-2">
@@ -211,7 +181,7 @@ export default function Dashboard() {
           {/* bento grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             {/* Portfolio value */}
-            <div className="v5-card rounded-2xl px-5 py-5">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5">
               <div className="flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>Portfolio value</p>
                 <Expand size={13} style={{ color: MUTE }} />
@@ -229,15 +199,15 @@ export default function Dashboard() {
               </div>
               <Link
                 to="/portfolio"
-                className="v5-body text-xs mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full"
+                className="v5-body text-xs mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-full hover:gap-1.5 transition-all"
                 style={{ background: '#1A2333', color: SUB }}
               >
                 View chart <ArrowUpRight size={12} />
               </Link>
-            </div>
+            </motion.div>
 
             {/* Market activity */}
-            <div className="v5-card rounded-2xl px-5 py-5">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5">
               <div className="flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>NIFTY 50 today</p>
                 <span className="v5-body text-[11px] flex items-center gap-1" style={{ color: MUTE }}>
@@ -255,10 +225,10 @@ export default function Dashboard() {
                   <span key={t} className="v5-mono text-[10px]" style={{ color: MUTE }}>{t}</span>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Allocation bar */}
-            <div className="v5-card rounded-2xl px-5 py-5">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5">
               <div className="flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>Allocation</p>
                 <span className="v5-body text-[11px]" style={{ color: MUTE }}>View</span>
@@ -272,7 +242,13 @@ export default function Dashboard() {
               </div>
               <div className="w-full h-2.5 rounded-full overflow-hidden flex mt-2" style={{ background: BORDER }}>
                 {ALLOCATION.map((a) => (
-                  <div key={a.label} style={{ width: `${a.pct}%`, background: a.color }} />
+                  <motion.div
+                    key={a.label}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${a.pct}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    style={{ background: a.color }}
+                  />
                 ))}
               </div>
               <div className="flex flex-col gap-1.5 mt-4">
@@ -285,10 +261,10 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Weekly P&L bar chart */}
-            <div className="v5-card rounded-2xl px-5 py-5">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5">
               <div className="flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>Weekly P&amp;L</p>
                 <span className="v5-body text-[11px] flex items-center gap-1" style={{ color: MUTE }}>
@@ -297,19 +273,23 @@ export default function Dashboard() {
               </div>
               <div className="flex items-end gap-2 mt-5 h-[110px]">
                 {PNL_BARS.map((h, i) => (
-                  <div key={WEEKDAYS[i]} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-md"
-                      style={{ height: `${h}%`, background: i === 3 ? TEAL : '#1A2333' }}
+                  <div key={WEEKDAYS[i]} className="flex-1 flex flex-col items-center gap-1 group">
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${h}%` }}
+                      transition={{ duration: 0.6, delay: i * 0.05, ease: 'easeOut' }}
+                      whileHover={{ scale: 1.06 }}
+                      className="w-full rounded-md cursor-pointer"
+                      style={{ background: i === 3 ? TEAL : '#1A2333' }}
                     />
-                    <span className="v5-mono text-[9px]" style={{ color: MUTE }}>{WEEKDAYS[i]}</span>
+                    <span className="v5-mono text-[9px] group-hover:text-bone transition-colors" style={{ color: MUTE }}>{WEEKDAYS[i]}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Margin health gauge */}
-            <div className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center">
               <div className="w-full flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>Margin health</p>
                 <span className="v5-body text-[11px] flex items-center gap-1" style={{ color: MUTE }}>
@@ -319,10 +299,10 @@ export default function Dashboard() {
               <div className="mt-2">
                 <SemiGauge value={72} color={TEAL} label="out of 100" />
               </div>
-            </div>
+            </motion.div>
 
             {/* Top holdings radial */}
-            <div className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center">
               <div className="w-full flex items-center justify-between">
                 <p className="v5-body text-sm" style={{ color: SUB }}>Top holdings</p>
                 <span className="v5-body text-[11px]" style={{ color: MUTE }}>Weekly</span>
@@ -345,14 +325,20 @@ export default function Dashboard() {
                   </span>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Weekly progress duo */}
-            <div className="v5-card rounded-2xl px-5 py-5 md:col-span-1">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 md:col-span-1">
               <p className="v5-body text-sm" style={{ color: SUB }}>This week</p>
               <p className="v5-body text-[11px] mt-1" style={{ color: MUTE }}>4/6 orders filled</p>
               <div className="w-full h-2 rounded-full mt-2 overflow-hidden" style={{ background: BORDER }}>
-                <div className="h-full rounded-full" style={{ width: '66%', background: TEAL }} />
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: '66%' }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  className="h-full rounded-full"
+                  style={{ background: TEAL }}
+                />
               </div>
               <div className="flex items-center gap-6 mt-5">
                 <div>
@@ -368,10 +354,10 @@ export default function Dashboard() {
                 <Wallet size={13} style={{ color: TEAL }} />
                 You're well within your margin this week
               </div>
-            </div>
+            </motion.div>
 
             {/* Top movers bars */}
-            <div className="v5-card rounded-2xl px-5 py-5 md:col-span-1">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 md:col-span-1">
               <p className="v5-body text-sm" style={{ color: SUB }}>Top movers</p>
               <div className="flex flex-col gap-3 mt-4">
                 {TOP_MOVERS.map((m) => (
@@ -381,15 +367,25 @@ export default function Dashboard() {
                       <span className="v5-mono text-[11px]" style={{ color: m.color }}>+{m.pct - 60}%</span>
                     </div>
                     <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: BORDER }}>
-                      <div className="h-full rounded-full" style={{ width: `${m.pct}%`, background: m.color }} />
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${m.pct}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="h-full rounded-full"
+                        style={{ background: m.color }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Watchlist pick card */}
-            <div className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center text-center">
+            <motion.div
+              whileHover={{ ...cardHover, scale: 1.01 }}
+              transition={cardTransition}
+              className="v5-card rounded-2xl px-5 py-5 flex flex-col items-center text-center cursor-pointer"
+            >
               <div className="w-14 h-14 rounded-full flex items-center justify-center v5-mono text-sm font-bold" style={{ background: TEAL, color: INK }}>
                 RIL
               </div>
@@ -405,7 +401,7 @@ export default function Dashboard() {
                   <p className="v5-body text-[10px]" style={{ color: MUTE }}>Score</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </main>
