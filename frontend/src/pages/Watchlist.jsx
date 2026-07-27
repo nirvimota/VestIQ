@@ -1,211 +1,224 @@
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Plus } from 'lucide-react';
-import Sidebar from '../components/layout/Sidebar';
-import AmbientBackground from '../components/layout/AmbientBackground';
+// C:\nirvi\vestIQ\frontend\src\pages\Watchlist.jsx
+import { useContext, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { TradingContext } from "../context/TradingContext";
+import React from 'react';
+import { motion } from 'framer-motion';
+import {
+  Home,
+  LineChart as LineChartIcon,
+  ListChecks,
+  Send,
+  Bell,
+  ShieldCheck,
+  Settings,
+  ShoppingBag,
+} from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// vestIQ — Watchlist v2
-// Same layout language as Portfolio.jsx: Sidebar + AmbientBackground, zinc
-// surfaces, emerald/rose for up/down, framer-motion for the list and the
-// sliding filter pill. Search filters by symbol/name; All/Gainers/Losers
-// tabs filter the list; remove button appears on row hover.
-//
-// Self-contained on purpose — Sparkline / fmtINR / fmtPct / genSeries are
-// defined right here instead of pulled from shared components/utils files,
-// so this page has no extra files it depends on.
+// vestIQ — shared Sidebar
+// Was previously copy-pasted into every page with a bug: nav items compared
+// against a bare `location.pathname` with no `useLocation()` call, which
+// only "worked" by accident via the browser's global `window.location` and
+// wouldn't reliably reflect the current route on client-side navigation.
+// Fixed here with a real useLocation() call, plus a sliding highlight pill
+// (framer-motion layoutId) that animates between nav items instead of
+// snapping — the main "more interactive" ask.
 // ---------------------------------------------------------------------------
 
-const RAW_WATCHLIST = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', ltp: 2945.6, chg: 1.24 },
-  { symbol: 'TCS', name: 'Tata Consultancy', ltp: 3812.4, chg: -0.42 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', ltp: 1675.2, chg: 0.81 },
-  { symbol: 'INFY', name: 'Infosys', ltp: 1462.1, chg: -0.36 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', ltp: 1188.35, chg: -1.24 },
-  { symbol: 'SBIN', name: 'State Bank of India', ltp: 824.6, chg: 2.11 },
-  { symbol: 'ITC', name: 'ITC Ltd', ltp: 462.9, chg: -0.62 },
-  { symbol: 'BAJFINANCE', name: 'Bajaj Finance', ltp: 7210.5, chg: 0.86 },
-  { symbol: 'WIPRO', name: 'Wipro', ltp: 289.15, chg: -3.05 },
-  { symbol: 'MARUTI', name: 'Maruti Suzuki', ltp: 12840.2, chg: 1.62 },
+const NAV_ITEMS = [
+  { label: 'Overview', icon: Home, to: '/dashboard' },
+  { label: 'Portfolio', icon: LineChartIcon, to: '/portfolio' },
+  { label: 'Watchlist', icon: ListChecks, to: '/watchlist' },
+  { label: 'Transactions', icon: Send, to: '/orders' },
+  { label: 'Alerts', icon: Bell, to: '/alerts' },
+  { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
+  { label: 'Market', icon: ShoppingBag, to: '/market' }
 ];
 
-const TABS = ['All', 'Gainers', 'Losers'];
+const TEAL = '#2ED9B8';
+const INK = '#0A0F1A';
+const SUB = '#8A93A6';
+const BORDER = '#1E2838';
 
-function seededRandom(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
 
-function genSeries(symbol, points = 24) {
-  const rand = seededRandom(symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0));
-  let v = 100 + rand() * 20;
-  const out = [];
-  for (let i = 0; i < points; i++) {
-    v += (rand() - 0.48) * 6;
-    out.push({ i, v: Math.max(20, v) });
-  }
-  return out;
-}
+// same mock market list OrderTicket uses — keep these two in sync
+const MOCK_MARKET = [
+  { symbol: "RELIANCE", name: "Reliance Industries", price: 2456.75 },
+  { symbol: "TCS", name: "Tata Consultancy Services", price: 3890.10 },
+  { symbol: "HDFCBANK", name: "HDFC Bank", price: 1642.30 },
+  { symbol: "INFY", name: "Infosys", price: 1789.45 },
+  { symbol: "ITC", name: "ITC Limited", price: 462.80 },
+];
 
-function Sparkline({ data, up, width = 84, height = 32 }) {
-  const vals = data.map((d) => d.v);
-  const min = Math.min(...vals);
-  const max = Math.max(...vals);
-  const range = max - min || 1;
-  const stepX = width / (data.length - 1);
-  const points = data.map((d, i) => {
-    const x = i * stepX;
-    const y = height - ((d.v - min) / range) * height;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const path = `M${points.join(' L')}`;
-  const color = up ? '#34d399' : '#fb7185';
-  const areaPath = `${path} L${width},${height} L0,${height} Z`;
-  const gradId = `grad-${up ? 'up' : 'down'}-${Math.round(min)}-${Math.round(max)}`;
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#${gradId})`} stroke="none" />
-      <path d={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function fmtINR(n) {
-  return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function fmtPct(n) {
-  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
-}
+// original hardcoded watchlist — kept as seed/fallback
+const MOCK_WATCHLIST = ["RELIANCE", "HDFCBANK"];
 
 export default function Watchlist() {
-  const [tab, setTab] = useState('All');
-  const [query, setQuery] = useState('');
+  const { watchlist, addToWatchlist } = useContext(TradingContext);
+  const [showMarket, setShowMarket] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const enriched = useMemo(
-    () => RAW_WATCHLIST.map((w) => ({ ...w, up: w.chg >= 0, series: genSeries(w.symbol) })),
-    []
+  // merge context watchlist with the original mock, de-duped
+  const symbols = useMemo(() => {
+    const merged = [...new Set([...MOCK_WATCHLIST, ...watchlist])];
+    return merged;
+  }, [watchlist]);
+
+  const rows = symbols.map(
+    (sym) => MOCK_MARKET.find((s) => s.symbol === sym) ?? { symbol: sym, name: sym, price: 0 }
   );
 
-  const filtered = useMemo(() => {
-    return enriched
-      .filter((w) => (tab === 'Gainers' ? w.up : tab === 'Losers' ? !w.up : true))
-      .filter((w) => {
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return w.symbol.toLowerCase().includes(q) || w.name.toLowerCase().includes(q);
-      });
-  }, [enriched, tab, query]);
+  const filteredMarket = MOCK_MARKET.filter(
+    (s) =>
+      s.symbol.toLowerCase().includes(search.toLowerCase()) ||
+      s.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans flex relative">
-      <AmbientBackground opacity={0.1} />
-      <Sidebar />
+    <div className="max-w-full mx-auto px-4 py-6 flex gap-6">
+      <aside
+        className="hidden lg:flex flex-col w-56 shrink-0 px-4 py-6 sticky top-0 h-screen"
+        style={{ borderRight: `1px solid ${BORDER}` }}
+      >
+        <Link to="/dashboard" className="text-lg tracking-tight px-2 flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#ECEEF0' }}>
+          <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: TEAL, color: INK }}>
+            V
+          </span>
+          vest<span style={{ color: '#e8b84b' }}>IQ</span>
+        </Link>
 
-      <div className="flex-1 min-w-0 relative">
-        <div className="max-w-5xl mx-auto px-5 py-8 pb-24">
-          {/* Header */}
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <p className="text-zinc-500 text-xs font-mono tracking-wide uppercase mb-1">Watchlist</p>
-              <h1 className="text-2xl font-semibold tracking-tight">{filtered.length} stocks</h1>
+        <nav className="mt-8 flex flex-col gap-1">
+          {NAV_ITEMS.map(({ label, icon: Icon, to }) => {
+            const active = location.pathname === to;
+            return (
+              <Link key={label} to={to} className="relative px-3 py-2.5 rounded-xl text-sm" style={{ color: active ? INK : SUB }}>
+                {active && (
+                  <motion.div
+                    layoutId="sidebar-active-pill"
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: TEAL }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative flex items-center gap-3 transition-transform" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <Icon size={16} />
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto flex flex-col gap-1">
+          <Link
+            to="/settings"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-white/[0.04] transition-colors"
+            style={{ color: SUB, fontFamily: "'Inter', sans-serif" }}
+          >
+            <Settings size={16} />
+            Settings
+          </Link>
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mt-3" style={{ border: `1px solid ${BORDER}` }}>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+              style={{ background: TEAL, color: INK, fontFamily: "'IBM Plex Mono', monospace" }}
+            >
             </div>
-            <button className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-zinc-100 border border-zinc-800 hover:border-zinc-700 rounded-lg px-3 py-2 transition-colors">
-              <Plus size={14} /> Add stock
-            </button>
+            <div className="min-w-0">
+              <p className="text-xs truncate" style={{ color: '#ECEEF0', fontFamily: "'Inter', sans-serif" }}>Alice</p>
+              <p className="text-[10px]" style={{ color: '#4E5A70', fontFamily: "'IBM Plex Mono', monospace" }}>Investor</p>
+            </div>
           </div>
+        </div>
+      </aside>
 
-          {/* Search + tabs */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search symbol or company..."
-                className="w-full bg-zinc-900/60 border border-zinc-800 rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono outline-none focus:border-zinc-600 placeholder:text-zinc-600"
-              />
-            </div>
-            <div className="relative flex gap-1 bg-zinc-900/60 border border-zinc-800 rounded-lg p-1 self-start">
-              {TABS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className="relative px-3 py-1.5 text-xs font-mono rounded-md transition-colors"
-                  style={{ color: tab === t ? '#f4f4f5' : '#71717a' }}
-                >
-                  {tab === t && (
-                    <motion.div
-                      layoutId="watchlist-tab-pill"
-                      className="absolute inset-0 bg-zinc-800 rounded-md"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative">{t}</span>
-                </button>
-              ))}
+      <div></div>
+      <div className="w-full px-12 py-3">
+        <div className="flex flex-col items-center mb-4">
+          <h1 className="text-xl font-semibold text-white">Watchlist</h1>
+          <button
+            onClick={() => setShowMarket((v) => !v)}
+            className="text-sm font-medium text-emerald-600"
+          >
+            {showMarket ? "Close" : "+ Add stock"}
+          </button>
+        </div>
+
+        {showMarket && (
+          <div className="rounded-xl border border-gray-200 p-3 mb-4 text-white">
+            <input
+              autoFocus
+              placeholder="Search stocks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 mb-3 text-sm"
+            />
+            <div className="space-y-1 max-h-56 overflow-y-auto">
+              {filteredMarket.map((s) => {
+                const already = symbols.includes(s.symbol);
+                return (
+                  <div
+                    key={s.symbol}
+                    className="flex items-center text-white justify-between px-2 py-2 rounded-lg hover:bg-gray-50"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-white">{s.symbol}</p>
+                      <p className="text-xs text-white">{s.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">₹{s.price.toFixed(2)}</span>
+                      {already ? (
+                        <span className="text-xs text-gray-400 px-2">Added</span>
+                      ) : (
+                        <button
+                          onClick={() => addToWatchlist(s.symbol)}
+                          className="text-xs font-medium text-emerald-600 px-2 py-1"
+                        >
+                          Watch
+                        </button>
+                      )}
+                      <Link
+                        to={`/order/${s.symbol}`}
+                        className="text-xs font-medium bg-emerald-600 text-white rounded-lg px-2 py-1"
+                      >
+                        Buy
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredMarket.length === 0 && (
+                <p className="text-sm text-gray-400 px-2 py-3">No matches.</p>
+              )}
             </div>
           </div>
+        )}
 
-          {/* List */}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl divide-y divide-zinc-800 overflow-hidden">
-            <AnimatePresence initial={false}>
-              {filtered.map((w) => (
-                <motion.div
-                  key={w.symbol}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="group relative"
-                >
-                  <Link
-                    to={`/stock/${w.symbol}`}
-                    className="flex items-center justify-between gap-4 px-4 py-3.5 hover:bg-zinc-800/40 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-mono text-sm">{w.symbol}</p>
-                      <p className="text-zinc-500 text-[11px] truncate">{w.name}</p>
-                    </div>
-
-                    <Sparkline data={w.series} up={w.up} width={72} height={28} />
-
-                    <div className="text-right shrink-0 w-24">
-                      <p className="font-mono text-sm">₹{fmtINR(w.ltp)}</p>
-                      <p className={`font-mono text-[11px] ${w.up ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {fmtPct(w.chg)}
-                      </p>
-                    </div>
-                  </Link>
-
-                  <button
-                    onClick={(e) => e.preventDefault()}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-rose-400 bg-zinc-950/80 rounded-md p-1"
-                    aria-label={`Remove ${w.symbol} from watchlist`}
-                  >
-                    <X size={14} />
-                  </button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {filtered.length === 0 && (
-              <div className="px-4 py-10 text-center text-zinc-500 text-sm font-mono">
-                No stocks match "{query}"
+        <div className="space-y-2">
+          {rows.map((s) => (
+            <div
+              key={s.symbol}
+              className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 gap-10"
+            >
+              <div>
+                <p className="font-medium text-white">{s.symbol}</p>
+                <p className="text-xs text-gray-500">{s.name}</p>
               </div>
-            )}
-          </div>
+              <div className="flex items-center gap-6">
+                <span className="text-sm text-gray-700">₹{s.price.toFixed(2)}</span>
+                <Link
+                  to={`/order/${s.symbol}`}
+                  className="text-sm font-medium bg-emerald-600 text-white rounded-lg px-3 py-1.5"
+                >
+                  Buy
+                </Link>
+              </div>
+            </div>
+          ))}
+          {rows.length === 0 && (
+            <p className="text-sm text-gray-500">Your watchlist is empty.</p>
+          )}
         </div>
       </div>
     </div>

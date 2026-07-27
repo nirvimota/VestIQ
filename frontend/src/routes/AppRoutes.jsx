@@ -13,7 +13,10 @@ import OrderTicket from '../pages/OrderTicket';
 import Portfolio from '../pages/Portfolio';
 import OrderHistory from '../pages/OrderHistory';
 import Alerts from '../pages/Alerts';
+import Profile from '../pages/Profile';
+import Fundsipo from '../pages/Fundsipo';
 import NotFound from '../pages/NotFound';
+import LiveMarket from '../pages/market';
 
 export default function AppRoutes() {
   return (
@@ -30,7 +33,9 @@ export default function AppRoutes() {
       <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
       <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/funds-ipo" element={<ProtectedRoute><Fundsipo /></ProtectedRoute>} />
+      <Route path="/Market" element={<ProtectedRoute><LiveMarket/></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

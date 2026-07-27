@@ -9,6 +9,7 @@ import {
   Bell,
   ShieldCheck,
   Settings,
+  ShoppingBag,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { label: 'Transactions', icon: Send, to: '/orders' },
   { label: 'Alerts', icon: Bell, to: '/alerts' },
   { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
+  { label: 'Market',icon:ShoppingBag, to:'/market'}
 ];
 
 const TEAL = '#2ED9B8';
