@@ -1,6 +1,6 @@
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 import { getQuote } from '../services/marketDataService.js';
-import { createNotification } from '../services/notificationService.js';
+import { NotificationService } from '../services/notificationService.js';
 
 export async function runAlertCheck() {
   const { data: alerts, error } = await supabase.from('price_alerts').select('*').eq('triggered', false);
@@ -18,7 +18,7 @@ export async function runAlertCheck() {
       (alert.direction === 'below' && quote.price <= alert.target_price);
 
     if (crossed) {
-      await createNotification(alert.user_id, `${alert.symbol} crossed ₹${alert.target_price}`, 'price');
+      await NotificationService.createNotification(alert.user_id, `${alert.symbol} crossed ₹${alert.target_price}`, 'price');
       await supabase.from('price_alerts').update({ triggered: true }).eq('id', alert.id);
     }
   }

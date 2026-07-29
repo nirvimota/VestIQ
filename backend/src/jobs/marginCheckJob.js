@@ -1,5 +1,5 @@
-import { supabase } from '../config/supabase.js';
-import { createNotification } from '../services/notificationService.js';
+import supabase from '../config/supabase.js';
+import { NotificationService } from '../services/notificationService.js';
 
 export async function runMarginCheck() {
   const { data: fundsRows, error } = await supabase.from('funds').select('user_id, available_balance, blocked_margin');
@@ -10,7 +10,7 @@ export async function runMarginCheck() {
 
   for (const row of fundsRows) {
     if (row.blocked_margin > row.available_balance) {
-      await createNotification(row.user_id, 'Margin shortfall on open positions', 'margin');
+      await NotificationService.createNotification(row.user_id, 'Margin shortfall on open positions', 'margin');
     }
   }
 }
