@@ -1,4 +1,9 @@
 import { ORDER_STATUS } from '../utils/constants.js';
+import { Order } from '../models/Order.js';
+import { Transaction } from '../models/Transaction.js';
+import { PortfolioService } from './portfolioService.js';
+import { MarketDataService } from './marketDataService.js';
+import { AuditLogService } from './auditLogService.js';
 
 /**
  * Order Matching Service - handles order execution logic
@@ -284,6 +289,95 @@ export class OrderMatchingService {
       bids: [], // Array of [price, quantity]
       asks: []  // Array of [price, quantity]
     };
+  }
+
+  /**
+   * Process all pending limit and stop-loss orders against current market prices
+   * @returns {Promise<Array>} List of executed order results
+   */
+  static async processPendingOrders() {
+    try {
+      const pendingOrders = await Order.findPendingOrders();
+      if (!pendingOrders || !pendingOrders.length) return [];
+
+      const symbols = [...new Set(pendingOrders.map(o => o.symbol))];
+      const quotes = await MarketDataService.getQuotes(symbols);
+
+      const executionResults = [];
+
+      for (const order of pendingOrders) {
+        const quote = quotes[order.symbol];
+        if (!quote || typeof quote.price !== 'number' || quote.price <= 0) {
+          continue;
+        }
+
+        const currentPrice = quote.price;
+
+        try {
+          let execution = null;
+          if (order.order_type === 'limit' && this.shouldExecuteLimitOrder(order, currentPrice)) {
+            execution = await this.executeLimitOrder(order, currentPrice);
+          } else if (order.order_type === 'stop-loss' && this.shouldTriggerStopLossOrder(order, currentPrice)) {
+            execution = await this.executeStopLossOrder(order, currentPrice);
+          }
+
+          if (execution) {
+            // Update Order Fill status
+            const updatedOrder = await Order.updateFill(
+              order.id,
+              execution.executedQuantity,
+              execution.executionPrice
+            );
+
+            // Update Portfolio position
+            const quantityDelta = order.side === 'buy'
+              ? execution.executedQuantity
+              : -execution.executedQuantity;
+
+            await PortfolioService.updatePositionFromTrade(
+              order.user_id,
+              order.symbol,
+              quantityDelta,
+              execution.executionPrice
+            );
+
+            // Record Transaction
+            const amount = execution.executedQuantity * execution.executionPrice;
+            const fees = execution.commission || 0;
+            await Transaction.create({
+              user_id: order.user_id,
+              order_id: order.id,
+              type: order.side === 'buy' ? 'buy' : 'sell',
+              symbol: order.symbol,
+              quantity: execution.executedQuantity,
+              price: execution.executionPrice,
+              amount: amount,
+              fees: fees,
+              net_amount: order.side === 'buy' ? -(amount + fees) : (amount - fees)
+            });
+
+            // Log Audit Trail
+            await AuditLogService.logAction(order.user_id, 'ORDER_MATCHED', {
+              orderId: order.id,
+              symbol: order.symbol,
+              side: order.side,
+              order_type: order.order_type,
+              executionPrice: execution.executionPrice,
+              executedQuantity: execution.executedQuantity
+            });
+
+            executionResults.push({ orderId: order.id, status: updatedOrder.status, execution });
+          }
+        } catch (err) {
+          console.error(`[OrderMatching] Error processing order ${order.id}:`, err.message);
+        }
+      }
+
+      return executionResults;
+    } catch (err) {
+      console.error('[OrderMatching] processPendingOrders failed:', err.message);
+      return [];
+    }
   }
 }
 

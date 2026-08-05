@@ -23,28 +23,48 @@ export class OrderService {
    */
   static async placeOrder(orderData) {
     const { user_id, symbol, side, order_type, quantity, price } = orderData;
+    const uppercaseSymbol = symbol.toUpperCase();
     
-    // For buy orders, check if user has sufficient funds
-    if (side === 'buy' && order_type !== 'market') {
-      // For limit orders, check against limit price
-      // For market orders, we'll check later when we get current price
-      const effectivePrice = price || await this._getCurrentPrice(symbol);
-      
-      const fundsCheck = await this._checkFundsForBuy(user_id, quantity, effectivePrice);
-      if (!fundsCheck.sufficient) {
-        throw new Error(fundsCheck.message);
-      }
+    // Determine price for checks
+    const effectivePrice = price || await this._getCurrentPrice(uppercaseSymbol);
+    if (!effectivePrice || effectivePrice <= 0) {
+      throw new Error(`Unable to determine price for stock ${uppercaseSymbol}`);
+    }
+
+    // Gather risk check parameters
+    const fundsSummary = await PortfolioService.getFundsSummary(user_id);
+    const availableBalance = parseFloat(fundsSummary?.available_balance || 0);
+
+    const positions = await PortfolioService.getPositions(user_id);
+    const existingPosition = positions.find(p => p.symbol === uppercaseSymbol);
+    const holdingQuantity = existingPosition ? existingPosition.quantity : 0;
+
+    const portfolioSummary = await PortfolioService.getPortfolioSummary(user_id);
+    const portfolioValue = portfolioSummary?.totalMarketValue || 0;
+
+    // Run comprehensive Pre-Trade Risk Check
+    const riskCheck = await RiskCheckService.preTradeCheck({
+      side,
+      quantity,
+      price: effectivePrice,
+      availableBalance,
+      holdingQuantity,
+      portfolioValue
+    });
+
+    if (!riskCheck.passed) {
+      throw new Error(`Risk Check Failed: ${riskCheck.reason}`);
     }
     
     // Create the order
     const order = await Order.create({
       user_id,
-      symbol: symbol.toUpperCase(),
+      symbol: uppercaseSymbol,
       side,
       order_type,
       quantity,
       price: price || null,
-      status: order_type === 'market' ? 'pending' : 'pending' // Will be updated by matching engine
+      status: 'pending'
     });
     
     // Log the action
@@ -261,33 +281,6 @@ export class OrderService {
     });
   }
 }
-
-// Helper method to update order fill status (would typically be in Order model)
-Order.updateFill = async function(orderId, filledQuantity, averagePrice) {
-  // Determine new status
-  // Need to get original quantity to determine if fully or partially filled
-  const order = await this.findById(orderId); // Again, would need internal method
-  
-  let newStatus = 'partial';
-  if (filledQuantity >= order.quantity) {
-    newStatus = 'filled';
-  }
-  
-  const { data, error } = await supabase
-    .from('orders')
-    .update({
-      filled_quantity: filledQuantity,
-      average_price: averagePrice,
-      status: newStatus,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', orderId)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return new Order(data);
-};
 
 // Export default instance
 export default OrderService;

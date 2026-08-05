@@ -270,12 +270,16 @@ export async function getCompanyOverview(symbol) {
   }
 }
 
+// Export getMovers alias for backward compatibility with stockController
+export const getMovers = getTopMovers;
+
 // ── Backward-compat class wrapper (portfolioService imports MarketDataService) ─
 export class MarketDataService {
   static getQuote   = getQuote;
   static getQuotes  = getQuotes;
   static getIndices = getIndices;
   static getTopMovers = getTopMovers;
+  static getMovers    = getTopMovers;
   static getCompanyOverview = getCompanyOverview;
   static getTimeSeries = getTimeSeries;
 }

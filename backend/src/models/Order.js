@@ -62,19 +62,38 @@ export class Order {
   /**
    * Get order by ID
    * @param {string} orderId - Order ID
-   * @param {string} userId - User ID (for authorization)
+   * @param {string|null} [userId=null] - User ID (optional, for authorization)
    * @returns {Promise<Order>} Order instance
    */
-  static async findById(orderId, userId) {
-    const { data, error } = await supabase
+  static async findById(orderId, userId = null) {
+    let query = supabase
       .from('orders')
       .select('*')
-      .eq('id', orderId)
-      .eq('user_id', userId)
-      .single();
+      .eq('id', orderId);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query.single();
     
     if (error) throw error;
     return new Order(data);
+  }
+
+  /**
+   * Get all active/pending orders across the system for order matching
+   * @returns {Promise<Order[]>} Array of pending or partially_filled orders
+   */
+  static async findPendingOrders() {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .in('status', ['pending', 'partially_filled'])
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return (data || []).map(order => new Order(order));
   }
 
   /**
@@ -157,12 +176,14 @@ export class Order {
    * @returns {Promise<Order>} Updated order
    */
   static async updateFill(orderId, filledQuantity, averagePrice) {
-    // Determine new status based on fill status
-    let newStatus = 'partial';
-    if (filledQuantity >= this.quantity) {
+    const order = await this.findById(orderId);
+    if (!order) throw new Error(`Order ${orderId} not found`);
+
+    let newStatus = 'partially_filled';
+    if (filledQuantity >= order.quantity) {
       newStatus = 'filled';
     } else if (filledQuantity > 0) {
-      newStatus = 'partial';
+      newStatus = 'partially_filled';
     }
 
     const { data, error } = await supabase
