@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Transaction model - represents a financial transaction (trade, deposit, withdrawal, etc.)
  * Maps to public.transactions table

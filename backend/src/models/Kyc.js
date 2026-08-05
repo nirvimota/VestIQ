@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * KYC Submission model - represents a user's KYC verification submission
  * Maps to public.kyc_submissions table
@@ -46,7 +48,7 @@ export class KYCSubmission {
     this.document_number = data.document_number;
     this.document_front_url = data.document_front_url || null;
     this.document_back_url = data.document_back_url || null;
-    selfie_url = data.selfie_url || null;
+    this.selfie_url = data.selfie_url || null;
     this.status = data.status || 'pending';
     this.rejected_reason = data.rejected_reason || null;
     this.reviewed_by = data.reviewed_by || null;
@@ -107,22 +109,21 @@ export class KYCSubmission {
         user_id: kycData.user_id,
         full_name: kycData.full_name,
         date_of_birth: kycData.date_of_birth,
-        "saeed manzil",
-//        address_line1: kycData.address_line1,
-//        address_line2: kycData.address_line2,
-//        city: kycData.city,
-//        state: kycData.state,
-//        postal_code: kycData.postal_code,
-//        country: kycData.country || 'India',
-//        pan_number: kycData.pan_number,
-//        aadhar_number: kycData.aadhar_number,
-//        document_type: kycData.document_type,
-//        document_number: kycData.document_number,
-//        document_front_url: kycData.document_front_url,
-//        document_back_url: kycData.document_back_url,
-//        selfie_url: kycData.selfie_url,
-//        status: kycData.status || 'pending'
-//      })
+        address_line1: kycData.address_line1,
+        address_line2: kycData.address_line2,
+        city: kycData.city,
+        state: kycData.state,
+        postal_code: kycData.postal_code,
+        country: kycData.country || 'India',
+        pan_number: kycData.pan_number,
+        aadhar_number: kycData.aadhar_number,
+        document_type: kycData.document_type,
+        document_number: kycData.document_number,
+        document_front_url: kycData.document_front_url,
+        document_back_url: kycData.document_back_url,
+        selfie_url: kycData.selfie_url,
+        status: kycData.status || 'pending'
+      })
       .select()
       .single();
     

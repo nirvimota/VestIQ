@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Alert model - represents a price alert set by a user
  * Maps to public.alerts table

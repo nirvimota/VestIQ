@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Order model - represents a buy/sell order
  * Maps to public.orders table

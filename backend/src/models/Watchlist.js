@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Watchlist model - represents a user's watchlist items
  * Maps to public.watchlist table

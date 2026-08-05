@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * User model - represents a user in the system
  * Maps to Supabase auth.users table (built-in)

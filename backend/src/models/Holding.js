@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Holding model - represents a user's holding (mutual funds, ETFs, etc.)
  * Maps to public.holdings table

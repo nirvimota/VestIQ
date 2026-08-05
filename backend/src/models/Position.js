@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Position model - represents a user's stock position
  * Maps to public.positions table

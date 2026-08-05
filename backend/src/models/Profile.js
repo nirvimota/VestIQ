@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Profile model - represents extended user profile information
  * Maps to public.profiles table

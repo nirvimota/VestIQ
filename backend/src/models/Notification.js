@@ -1,3 +1,5 @@
+import supabase from '../config/supabase.js';
+
 /**
  * Notification model - represents a notification for a user
  * Maps to public.notifications table
