@@ -301,6 +301,35 @@ export async function getCompanyOverview(symbol) {
   return await fetchPromise;
 }
 
+/**
+ * Search stocks by symbol or name via Twelve Data /symbol_search endpoint.
+ * @param {string} query
+ */
+export async function searchSymbols(query) {
+  if (!query || query.trim().length < 2) return [];
+  const q = query.trim().toUpperCase();
+  const key = `search:${q}`;
+  const cached = quoteCache.get(key);
+  if (cached) return cached;
+
+  try {
+    const data = await td('/symbol_search', { symbol: q, exchange: 'NSE' });
+    const matches = (data.data || []).map(s => ({
+      symbol: s.symbol,
+      name: s.instrument_name,
+      exchange: s.exchange,
+      country: s.country,
+      type: s.instrument_type,
+    }));
+
+    quoteCache.set(key, matches, 300); // 5 min cache
+    return matches;
+  } catch (err) {
+    console.error(`[MarketData] searchSymbols(${q}) failed:`, err.message);
+    return [];
+  }
+}
+
 // Export getMovers alias for backward compatibility with stockController
 export const getMovers = getTopMovers;
 
@@ -313,6 +342,7 @@ export class MarketDataService {
   static getMovers    = getTopMovers;
   static getCompanyOverview = getCompanyOverview;
   static getTimeSeries = getTimeSeries;
+  static searchSymbols = searchSymbols;
 }
 
 export default MarketDataService;
