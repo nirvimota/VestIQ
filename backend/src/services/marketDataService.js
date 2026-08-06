@@ -225,49 +225,80 @@ export async function getTopMovers() {
   };
 }
 
+const overviewInFlight = new Map();
+
 /**
  * Get company fundamentals via Alpha Vantage OVERVIEW endpoint.
  * @param {string} symbol
  */
 export async function getCompanyOverview(symbol) {
-  const key = `overview:${symbol.toUpperCase()}`;
+  const sym = symbol.toUpperCase();
+  const key = `overview:${sym}`;
   const cached = historyCache.get(key);
   if (cached) return cached;
 
-  try {
-    const res = await axios.get('https://www.alphavantage.co/query', {
-      params: {
-        function: 'OVERVIEW',
-        symbol: symbol.toUpperCase(),
-        apikey: env.alphaVantageApiKey,
-      },
-      timeout: 10000,
-    });
-
-    const d = res.data;
-    if (!d?.Symbol) throw new Error('No fundamental data');
-
-    const overview = {
-      symbol:           d.Symbol,
-      name:             d.Name,
-      sector:           d.Sector,
-      industry:         d.Industry,
-      market_cap:       parseFloat(d.MarketCapitalization) || 0,
-      pe_ratio:         parseFloat(d.PERatio) || null,
-      eps:              parseFloat(d.EPS) || null,
-      dividend_yield:   parseFloat(d.DividendYield) || null,
-      beta:             parseFloat(d.Beta) || null,
-      week_52_high:     parseFloat(d['52WeekHigh']) || null,
-      week_52_low:      parseFloat(d['52WeekLow']) || null,
-      description:      d.Description,
-    };
-
-    historyCache.set(key, overview);
-    return overview;
-  } catch (err) {
-    console.error(`[MarketData] getCompanyOverview(${symbol}) failed:`, err.message);
-    return historyCache.get(key) || null;
+  if (overviewInFlight.has(key)) {
+    return await overviewInFlight.get(key);
   }
+
+  const fetchPromise = (async () => {
+    try {
+      if (!env.alphaVantageApiKey || env.alphaVantageApiKey.includes('your_')) {
+        throw new Error('Alpha Vantage API key not configured');
+      }
+
+      const res = await axios.get('https://www.alphavantage.co/query', {
+        params: {
+          function: 'OVERVIEW',
+          symbol: sym,
+          apikey: env.alphaVantageApiKey,
+        },
+        timeout: 10000,
+      });
+
+      const d = res.data;
+
+      // Handle Alpha Vantage rate limit / note payload
+      if (d?.Note || d?.Information) {
+        console.warn(`[MarketData] Alpha Vantage limit note for ${sym}:`, d.Note || d.Information);
+        const stale = fallbackCache.get(key);
+        if (stale) return stale;
+        throw new Error('Rate limit exceeded on Alpha Vantage API');
+      }
+
+      if (!d?.Symbol) throw new Error('No fundamental data available');
+
+      const overview = {
+        symbol:           d.Symbol,
+        name:             d.Name,
+        sector:           d.Sector,
+        industry:         d.Industry,
+        market_cap:       parseFloat(d.MarketCapitalization) || 0,
+        pe_ratio:         parseFloat(d.PERatio) || null,
+        eps:              parseFloat(d.EPS) || null,
+        dividend_yield:   parseFloat(d.DividendYield) || null,
+        beta:             parseFloat(d.Beta) || null,
+        week_52_high:     parseFloat(d['52WeekHigh']) || null,
+        week_52_low:      parseFloat(d['52WeekLow']) || null,
+        description:      d.Description,
+      };
+
+      // Store in standard cache (24 hrs) and stale fallback
+      historyCache.set(key, overview, 86400);
+      fallbackCache.set(key, overview);
+      return overview;
+    } catch (err) {
+      console.error(`[MarketData] getCompanyOverview(${sym}) failed:`, err.message);
+      const stale = fallbackCache.get(key);
+      if (stale) return { ...stale, _stale: true };
+      return null;
+    } finally {
+      overviewInFlight.delete(key);
+    }
+  })();
+
+  overviewInFlight.set(key, fetchPromise);
+  return await fetchPromise;
 }
 
 // Export getMovers alias for backward compatibility with stockController

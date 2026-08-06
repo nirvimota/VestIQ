@@ -28,14 +28,19 @@ async function fetchNews(params) {
   return res.data?.articles || [];
 }
 
+function sanitizeText(str) {
+  if (!str) return '';
+  return str.replace(/<[^>]*>?/gm, '').trim();
+}
+
 function normalizeArticle(a) {
   return {
-    title:       a.title,
-    description: a.description,
-    url:         a.url,
-    source:      a.source?.name,
-    image:       a.urlToImage,
-    published_at: a.publishedAt,
+    title:       sanitizeText(a.title),
+    description: sanitizeText(a.description),
+    url:         a.url || '#',
+    source:      a.source?.name || 'Financial News',
+    image:       a.urlToImage || null,
+    published_at: a.publishedAt || new Date().toISOString(),
   };
 }
 

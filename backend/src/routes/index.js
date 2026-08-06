@@ -6,6 +6,8 @@ import orderRoutes from './orderRoutes.js';
 import portfolioRoutes from './portfolioRoutes.js';
 import watchlistRoutes from './watchlistRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import aiRoutes from './aiRoutes.js';
+import newsRoutes from './newsRoutes.js';
 
 const router = Router();
 
@@ -16,5 +18,7 @@ router.use('/orders', orderRoutes);
 router.use('/portfolio', portfolioRoutes);
 router.use('/watchlist', watchlistRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
+router.use('/news', newsRoutes);
 
 export default router;

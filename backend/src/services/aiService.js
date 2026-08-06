@@ -22,15 +22,32 @@ function getClient() {
 const MODEL = () => env.grokModel || 'grok-4-5';
 
 // ── Shared helper ─────────────────────────────────────────────────────────────
-async function chat(messages, { maxTokens = 1024, temperature = 0.4 } = {}) {
-  const client = getClient();
-  const res = await client.chat.completions.create({
-    model:       MODEL(),
-    messages,
-    max_tokens:  maxTokens,
-    temperature,
-  });
-  return res.choices[0]?.message?.content?.trim() ?? '';
+async function chat(messages, { maxTokens = 1024, temperature = 0.4, timeoutMs = 12000 } = {}) {
+  try {
+    const client = getClient();
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const res = await client.chat.completions.create(
+      {
+        model:       MODEL(),
+        messages,
+        max_tokens:  maxTokens,
+        temperature,
+      },
+      { signal: controller.signal }
+    ).finally(() => clearTimeout(timer));
+
+    return res.choices[0]?.message?.content?.trim() ?? 'Analysis unavailable.';
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.error('[AIService] Grok API request timed out');
+      return 'The AI engine request timed out. Please try again in a moment.';
+    }
+    console.error('[AIService] Grok API call failed:', err.message);
+    return `Unable to generate AI response at this time. (${err.message})`;
+  }
 }
 
 // ── System prompt base ────────────────────────────────────────────────────────
