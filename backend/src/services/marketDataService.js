@@ -39,7 +39,10 @@ export async function getQuote(symbol) {
   if (cached) return cached;
 
   try {
-    const data = await td('/quote', { symbol: symbol.toUpperCase(), exchange: 'NSE' });
+    // Twelve Data requires NSE stocks as "SYMBOL:NSE" — the exchange param alone causes 404
+    const sym = symbol.toUpperCase();
+    const tdSymbol = sym.includes(':') ? sym : `${sym}:NSE`;
+    const data = await td('/quote', { symbol: tdSymbol });
 
     const quote = {
       symbol:     data.symbol,
@@ -91,14 +94,18 @@ export async function getQuotes(symbols) {
 
   try {
     // Twelve Data supports comma-separated symbols in /price
-    const data = await td('/price', { symbol: toFetch.join(','), exchange: 'NSE' });
+    // NSE stocks must be in "SYMBOL:NSE" format
+    const tdSymbols = toFetch.map(s => s.includes(':') ? s : `${s}:NSE`);
+    const data = await td('/price', { symbol: tdSymbols.join(',') });
 
     // Response shape differs for 1 vs many symbols
-    const prices = toFetch.length === 1
+    // Keys in response will be "SYMBOL:NSE" — strip the exchange suffix for our result map
+    const rawPrices = toFetch.length === 1
       ? { [toFetch[0]]: data }
       : data;
 
-    for (const [sym, info] of Object.entries(prices)) {
+    for (const [rawKey, info] of Object.entries(rawPrices)) {
+      const sym = rawKey.split(':')[0]; // strip :NSE suffix if present
       const quote = {
         symbol: sym,
         price: parseFloat(info.price),
@@ -132,11 +139,12 @@ export async function getTimeSeries(symbol, interval = '1day', outputsize = 30) 
   if (cached) return cached;
 
   try {
+    const sym = symbol.toUpperCase();
+    const tdSymbol = sym.includes(':') ? sym : `${sym}:NSE`;
     const data = await td('/time_series', {
-      symbol: symbol.toUpperCase(),
+      symbol: tdSymbol,
       interval,
       outputsize,
-      exchange: 'NSE',
     });
 
     const series = (data.values || []).map(v => ({
@@ -165,22 +173,23 @@ export async function getIndices() {
   if (cached) return cached;
 
   const INDEX_SYMBOLS = [
-    { symbol: 'NIFTY', name: 'NIFTY 50',    exchange: 'NSE' },
-    { symbol: 'SENSEX', name: 'SENSEX',      exchange: 'BSE' },
-    { symbol: 'BANKNIFTY', name: 'BANK NIFTY', exchange: 'NSE' },
+    { symbol: 'NIFTY:NSE',     name: 'NIFTY 50'    },
+    { symbol: 'SENSEX:BSE',   name: 'SENSEX'       },
+    { symbol: 'BANKNIFTY:NSE', name: 'BANK NIFTY' },
   ];
 
   try {
     const results = await Promise.allSettled(
-      INDEX_SYMBOLS.map(idx => td('/quote', { symbol: idx.symbol, exchange: idx.exchange }))
+      INDEX_SYMBOLS.map(idx => td('/quote', { symbol: idx.symbol }))
     );
 
     const indices = INDEX_SYMBOLS.map((idx, i) => {
+      const displaySymbol = idx.symbol.split(':')[0]; // strip exchange suffix for display
       const r = results[i];
       if (r.status === 'fulfilled') {
         const d = r.value;
         return {
-          symbol:    idx.symbol,
+          symbol:    displaySymbol,
           name:      idx.name,
           price:     parseFloat(d.close),
           change:    parseFloat(d.change),
@@ -188,11 +197,13 @@ export async function getIndices() {
         };
       }
       // Fallback
-      const stale = fallbackCache.get(`index:${idx.symbol}`);
-      return stale || { symbol: idx.symbol, name: idx.name, price: 0, change: 0, change_pct: 0, _unavailable: true };
+      const stale = fallbackCache.get(`index:${displaySymbol}`);
+      return stale || { symbol: displaySymbol, name: idx.name, price: 0, change: 0, change_pct: 0, _unavailable: true };
     });
 
+    // Store using clean symbol (no exchange suffix)
     indices.forEach(idx => fallbackCache.set(`index:${idx.symbol}`, idx));
+
     indexCache.set(key, indices);
     return indices;
   } catch (err) {
@@ -313,8 +324,10 @@ export async function searchSymbols(query) {
   if (cached) return cached;
 
   try {
-    const data = await td('/symbol_search', { symbol: q, exchange: 'NSE' });
-    const matches = (data.data || []).map(s => ({
+    const data = await td('/symbol_search', { symbol: q, outputsize: 10 });
+    // Filter to NSE results for Indian stocks
+    const nseResults = (data.data || []).filter(s => s.exchange === 'NSE' || s.country === 'India');
+    const matches = nseResults.map(s => ({
       symbol: s.symbol,
       name: s.instrument_name,
       exchange: s.exchange,

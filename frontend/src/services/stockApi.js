@@ -23,6 +23,11 @@ export function getStockQuote(symbol) {
   return apiFetch(`/stocks/${symbol}/quote`);
 }
 
+/** Fetch multiple quotes in one round-trip (comma-separated symbols) */
+export function getStockQuotes(symbols) {
+  return apiFetch(`/stocks/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+}
+
 export function getStockHistory(symbol, interval = '1day', outputsize = 30) {
   return apiFetch(`/stocks/${symbol}/history?interval=${interval}&outputsize=${outputsize}`);
 }

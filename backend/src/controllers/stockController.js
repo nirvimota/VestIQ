@@ -1,9 +1,18 @@
-import { getQuote, getIndices, getMovers, searchSymbols, getTimeSeries } from '../services/marketDataService.js';
+import { getQuote, getQuotes, getIndices, getMovers, searchSymbols, getTimeSeries } from '../services/marketDataService.js';
 import { ok, fail } from '../utils/apiResponse.js';
 
 export async function quote(req, res) {
   const data = await getQuote(req.params.symbol);
   if (!data) return fail(res, `Unknown symbol: ${req.params.symbol}`, 404);
+  return ok(res, data);
+}
+
+export async function quotes(req, res) {
+  const symbolsParam = req.query.symbols || '';
+  if (!symbolsParam) return fail(res, 'symbols query param required', 400);
+  const symbols = symbolsParam.split(',').map(s => s.trim()).filter(Boolean);
+  if (symbols.length === 0) return fail(res, 'no valid symbols provided', 400);
+  const data = await getQuotes(symbols);
   return ok(res, data);
 }
 
