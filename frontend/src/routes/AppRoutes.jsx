@@ -1,5 +1,6 @@
+// src/routes/AppRoutes.jsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
 import Landing from '../pages/Landing';
@@ -17,26 +18,49 @@ import Profile from '../pages/Profile';
 import Fundsipo from '../pages/Fundsipo';
 import NotFound from '../pages/NotFound';
 import LiveMarket from '../pages/market';
+import Intraday from '../pages/intraday';
+import LongTerm from '../pages/Longterm';
 
 export default function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+  const location = useLocation();
+  // set by Dashboard's openStock() when it navigates to /stock/:symbol —
+  // tells us to keep rendering the page underneath instead of replacing it
+  const backgroundLocation = location.state?.backgroundLocation;
 
-      <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/watchlist" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
-      <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetail /></ProtectedRoute>} />
-      <Route path="/order/:symbol" element={<ProtectedRoute><OrderTicket /></ProtectedRoute>} />
-      <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
-      <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
-      <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/funds-ipo" element={<ProtectedRoute><Fundsipo /></ProtectedRoute>} />
-      <Route path="/Market" element={<ProtectedRoute><LiveMarket/></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+  return (
+    <>
+      {/* Primary route tree. When backgroundLocation is set, this renders
+          AGAINST that location instead of the current one — so e.g.
+          /dashboard stays mounted underneath the /stock/:symbol popup. */}
+      <Routes location={backgroundLocation || location}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+
+        <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/watchlist" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
+        <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetail /></ProtectedRoute>} />
+        <Route path="/order/:symbol" element={<ProtectedRoute><OrderTicket /></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+        <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/funds-ipo" element={<ProtectedRoute><Fundsipo /></ProtectedRoute>} />
+        <Route path="/Market" element={<ProtectedRoute><LiveMarket /></ProtectedRoute>} />
+        <Route path="/Intraday" element={<ProtectedRoute><Intraday /></ProtectedRoute>} />
+        <Route path="/Long-term" element={<ProtectedRoute><LongTerm /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {/* Overlay route tree — only mounts when backgroundLocation exists,
+          i.e. when we arrived via a click that set it. Renders StockDetail
+          a second time, on top of the tree above, as the popup. */}
+      {backgroundLocation && (
+        <Routes>
+          <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetail /></ProtectedRoute>} />
+        </Routes>
+      )}
+    </>
   );
 }

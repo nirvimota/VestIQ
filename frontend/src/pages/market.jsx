@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
 import { searchStocks, getMovers } from '../services/stockApi';
@@ -25,6 +25,7 @@ export default function LiveMarket({
   onToggleWatchlist = () => {},
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [stocks, setStocks] = useState(DEFAULT_STOCKS);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -32,7 +33,6 @@ export default function LiveMarket({
 
   const watchSet = new Set(watchlistSymbols);
 
-  // Live stock search trigger
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSearchResults([]);
@@ -55,8 +55,10 @@ export default function LiveMarket({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Now passes backgroundLocation so StockDetail renders as a popup on
+  // desktop (and a normal full page on mobile) instead of a hard navigation.
   const handleStockClick = (symbol) => {
-    navigate(`/stock/${symbol}`);
+    navigate(`/stock/${symbol}`, { state: { backgroundLocation: location } });
   };
 
   return (
@@ -73,7 +75,6 @@ export default function LiveMarket({
         </div>
         <p className="text-[#8A93A6] text-xs mb-6">Search any Indian stock symbol or click to view live details & Grok predictions.</p>
 
-        {/* Global Stock Search Bar */}
         <div className="relative mb-6">
           <Search size={18} className="absolute left-4 top-3.5 text-[#8A93A6]" />
           <input
@@ -84,7 +85,6 @@ export default function LiveMarket({
             className="w-full bg-[#111826] border border-[#1E2838] rounded-xl pl-11 pr-4 py-3 text-sm text-[#ECEEF0] placeholder-[#4E5A70] focus:outline-none focus:border-[#2ED9B8] transition-colors"
           />
 
-          {/* Search Dropdown Results */}
           {searchQuery.trim().length >= 2 && (
             <div className="absolute left-0 right-0 top-14 bg-[#111826] border border-[#1E2838] rounded-xl overflow-hidden shadow-2xl z-30 max-h-72 overflow-y-auto">
               {isSearching ? (
@@ -114,7 +114,6 @@ export default function LiveMarket({
           )}
         </div>
 
-        {/* Stock List */}
         <div className="space-y-3">
           {stocks.map((s) => {
             const chg = s.ltp - s.prevClose;

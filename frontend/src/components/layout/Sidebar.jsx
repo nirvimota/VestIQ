@@ -28,10 +28,13 @@ const NAV_ITEMS = [
   { label: 'Portfolio', icon: LineChartIcon, to: '/portfolio' },
   { label: 'Watchlist', icon: ListChecks, to: '/watchlist' },
   { label: 'Transactions', icon: Send, to: '/orders' },
-  { label: 'Alerts', icon: Bell, to: '/alerts' },
   { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
-  { label: 'Market',icon:ShoppingBag, to:'/market'}
+  { label: 'Market', icon: ShoppingBag, to: '/market' },
+  { label: 'IntraDay', icon: ShoppingBag, to: '/IntraDay' },
+  { label: 'Long term', icon: ShoppingBag, to: '/Long-term' },
+  { label: 'Alerts', icon: Bell, to: '/alerts' }
 ];
+
 
 const TEAL = '#2ED9B8';
 const INK = '#0A0F1A';

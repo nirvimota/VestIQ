@@ -1,3 +1,4 @@
+// C:\nirvi\vestIQ\frontend\src\pages\Kyc.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,13 +17,22 @@ import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
 
 // ---------------------------------------------------------------------------
-// vestIQ — KYC v2
-// Same six-step flow, moved onto the shared Sidebar/background (fixing the
-// same undeclared-`location` bug and the orb divs being placed oddly inside
-// the flex row before content). Added: an overall progress bar that fills as
-// you move through steps, hover/tap feedback on the stepper dots and upload
-// boxes, and a subtle "just uploaded" check animation on file selection.
+// vestIQ — KYC v3
+// Same six-step flow, recoloured off the old glass-card/orb/gold aesthetic
+// onto the shared v5.1 token system (INK/CARD/BORDER/TEXT/SUB/MUTE/TEAL/BLUE
+// + v5-display/v5-mono/v5-body) so it matches Dashboard, OrderHistory,
+// Intraday, and Portfolio. Orb glow divs removed, auth-input/auth-btn/
+// glass-card replaced with flat v5-input/v5-btn/v5-card equivalents.
 // ---------------------------------------------------------------------------
+
+const INK = '#0A0F1A';
+const CARD = '#111826';
+const BORDER = '#1E2838';
+const TEXT = '#ECEEF0';
+const SUB = '#8A93A6';
+const MUTE = '#4E5A70';
+const TEAL = '#2ED9B8';
+const BLUE = '#5B9CFF';
 
 const STEPS = [
   { key: 'personal', label: 'Personal', icon: User },
@@ -41,8 +51,8 @@ const RELATIONS = ['Spouse', 'Parent', 'Child', 'Sibling', 'Other'];
 
 function Field({ label, children }) {
   return (
-    <div className="input-group">
-      <label className="input-label">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="v5-body text-xs" style={{ color: SUB }}>{label}</label>
       {children}
     </div>
   );
@@ -50,18 +60,22 @@ function Field({ label, children }) {
 
 function UploadBox({ label, hint, file, onChange }) {
   return (
-    <div className="input-group">
-      <label className="input-label">{label}</label>
-      <motion.label whileHover={{ borderColor: 'rgba(63,214,192,0.4)' }} className="auth-input flex items-center gap-3 cursor-pointer !py-3">
+    <div className="flex flex-col gap-1.5">
+      <label className="v5-body text-xs" style={{ color: SUB }}>{label}</label>
+      <motion.label
+        whileHover={{ borderColor: `${TEAL}66` }}
+        className="v5-input flex items-center gap-3 cursor-pointer !py-3"
+      >
         <motion.span
           animate={file ? { scale: [1, 1.15, 1] } : {}}
           transition={{ duration: 0.35 }}
-          className="w-8 h-8 rounded-lg bg-teal/10 text-teal flex items-center justify-center shrink-0"
+          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: `${TEAL}1A`, color: TEAL }}
         >
           {file ? <Check size={14} /> : <Upload size={14} />}
         </motion.span>
-        <span className="text-sm truncate">
-          {file ? file : <span className="text-slate">{hint}</span>}
+        <span className="v5-body text-sm truncate" style={{ color: file ? TEXT : MUTE }}>
+          {file || hint}
         </span>
         <input type="file" className="hidden" onChange={(e) => onChange(e.target.files?.[0]?.name || '')} />
       </motion.label>
@@ -102,28 +116,58 @@ export default function Kyc() {
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (
-    <div className="min-h-screen bg-ink flex relative">
+    <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+        .v5-display { font-family: 'Space Grotesk', sans-serif; }
+        .v5-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+        .v5-body { font-family: 'Inter', sans-serif; }
+        .v5-card { background: ${CARD}; border: 1px solid ${BORDER}; }
+        .v5-input {
+          width: 100%;
+          background: ${INK};
+          border: 1px solid ${BORDER};
+          border-radius: 10px;
+          padding: 10px 14px;
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          color: ${TEXT};
+          transition: border-color 0.15s ease;
+          outline: none;
+        }
+        .v5-input:focus { border-color: ${TEAL}66; }
+        .v5-input::placeholder { color: ${MUTE}; }
+        .v5-btn {
+          border-radius: 999px;
+          font-family: 'Inter', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          transition: opacity 0.15s ease;
+        }
+        .v5-btn-primary { background: ${TEAL}; color: ${INK}; }
+        .v5-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .v5-seg-option { transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease; }
+      `}</style>
+
       <AmbientBackground opacity={0.12} />
       <Sidebar />
 
       <div className="flex-1 min-w-0 relative px-4 sm:px-6 py-10">
-        <div className="orb orb-gold w-80 h-80 -top-24 -right-16" />
-        <div className="orb orb-teal w-64 h-64 -bottom-20 -left-16" />
-
         <div className="relative z-10 max-w-2xl mx-auto">
           <div className="text-center mb-6">
-            <h1 className="font-display text-2xl sm:text-3xl text-bone">Complete your KYC</h1>
-            <p className="text-slate text-sm mt-2">
+            <h1 className="v5-display text-2xl sm:text-3xl" style={{ color: TEXT }}>Complete your KYC</h1>
+            <p className="v5-body text-sm mt-2" style={{ color: SUB }}>
               Required before your trading &amp; demat account can be activated — takes about 5 minutes.
             </p>
           </div>
 
           {/* overall progress */}
-          <div className="w-full h-1 rounded-full bg-border overflow-hidden mb-6">
+          <div className="w-full h-1 rounded-full overflow-hidden mb-6" style={{ background: BORDER }}>
             <motion.div
               animate={{ width: `${overallProgress}%` }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="h-full rounded-full bg-gradient-to-r from-teal to-gold"
+              className="h-full rounded-full"
+              style={{ background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }}
             />
           </div>
 
@@ -143,26 +187,26 @@ export default function Kyc() {
                     style={{ cursor: i < step ? 'pointer' : 'default' }}
                   >
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center border transition-colors ${
-                        done
-                          ? 'bg-teal border-teal text-ink'
-                          : activeStep
-                          ? 'bg-gold border-gold text-ink'
-                          : 'bg-transparent border-border text-slate'
-                      }`}
+                      className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
+                      style={{
+                        background: done ? TEAL : activeStep ? BLUE : 'transparent',
+                        borderColor: done ? TEAL : activeStep ? BLUE : BORDER,
+                        color: done || activeStep ? INK : MUTE,
+                      }}
                     >
                       {done ? <Check size={15} /> : <Icon size={15} />}
                     </div>
-                    <span className={`text-[10px] font-mono hidden sm:block ${activeStep ? 'text-bone' : 'text-slate'}`}>
+                    <span className="v5-mono text-[10px] hidden sm:block" style={{ color: activeStep ? TEXT : MUTE }}>
                       {s.label}
                     </span>
                   </motion.button>
                   {i < STEPS.length - 1 && (
-                    <div className="flex-1 h-px mx-1 relative bg-border overflow-hidden">
+                    <div className="flex-1 h-px mx-1 relative overflow-hidden" style={{ background: BORDER }}>
                       <motion.div
                         animate={{ width: i < step ? '100%' : '0%' }}
                         transition={{ duration: 0.3 }}
-                        className="absolute inset-y-0 left-0 bg-teal"
+                        className="absolute inset-y-0 left-0"
+                        style={{ background: TEAL }}
                       />
                     </div>
                   )}
@@ -172,7 +216,7 @@ export default function Kyc() {
           </div>
 
           {/* card */}
-          <div className="glass-card rounded-2xl p-6 sm:p-8">
+          <div className="v5-card rounded-2xl p-6 sm:p-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -185,14 +229,14 @@ export default function Kyc() {
                 {step === 0 && (
                   <>
                     <Field label="Full name (as per PAN)">
-                      <input className="auth-input" value={form.fullName} onChange={set('fullName')} placeholder="John Doe" />
+                      <input className="v5-input" value={form.fullName} onChange={set('fullName')} placeholder="John Doe" />
                     </Field>
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Date of birth">
-                        <input type="date" className="auth-input" value={form.dob} onChange={set('dob')} />
+                        <input type="date" className="v5-input" value={form.dob} onChange={set('dob')} />
                       </Field>
                       <Field label="Gender">
-                        <select className="auth-input" value={form.gender} onChange={set('gender')}>
+                        <select className="v5-input" value={form.gender} onChange={set('gender')}>
                           <option value="">Select</option>
                           <option>Male</option>
                           <option>Female</option>
@@ -201,14 +245,14 @@ export default function Kyc() {
                       </Field>
                     </div>
                     <Field label="PAN number">
-                      <input className="auth-input uppercase" value={form.pan} onChange={set('pan')} placeholder="ABCDE1234F" maxLength={10} />
+                      <input className="v5-input uppercase" value={form.pan} onChange={set('pan')} placeholder="ABCDE1234F" maxLength={10} />
                     </Field>
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Mobile number">
-                        <input className="auth-input" value={form.mobile} onChange={set('mobile')} placeholder="+91 98765 43210" />
+                        <input className="v5-input" value={form.mobile} onChange={set('mobile')} placeholder="+91 98765 43210" />
                       </Field>
                       <Field label="Email address">
-                        <input type="email" className="auth-input" value={form.email} onChange={set('email')} placeholder="you@example.com" />
+                        <input type="email" className="v5-input" value={form.email} onChange={set('email')} placeholder="you@example.com" />
                       </Field>
                     </div>
                   </>
@@ -217,25 +261,25 @@ export default function Kyc() {
                 {step === 1 && (
                   <>
                     <Field label="Aadhaar number">
-                      <input className="auth-input" value={form.aadhaar} onChange={set('aadhaar')} placeholder="XXXX XXXX XXXX" maxLength={14} />
-                      <p className="text-slate text-[11px] mt-1.5">Used only for identity verification (e-KYC), never stored in plain text.</p>
+                      <input className="v5-input" value={form.aadhaar} onChange={set('aadhaar')} placeholder="XXXX XXXX XXXX" maxLength={14} />
+                      <p className="v5-body text-[11px] mt-1.5" style={{ color: MUTE }}>Used only for identity verification (e-KYC), never stored in plain text.</p>
                     </Field>
                     <Field label="Address line">
-                      <input className="auth-input" value={form.addressLine} onChange={set('addressLine')} placeholder="House no., street, area" />
+                      <input className="v5-input" value={form.addressLine} onChange={set('addressLine')} placeholder="House no., street, area" />
                     </Field>
                     <div className="grid grid-cols-3 gap-4">
                       <Field label="City">
-                        <input className="auth-input" value={form.city} onChange={set('city')} />
+                        <input className="v5-input" value={form.city} onChange={set('city')} />
                       </Field>
                       <Field label="State">
-                        <input className="auth-input" value={form.state} onChange={set('state')} />
+                        <input className="v5-input" value={form.state} onChange={set('state')} />
                       </Field>
                       <Field label="Pincode">
-                        <input className="auth-input" value={form.pincode} onChange={set('pincode')} maxLength={6} />
+                        <input className="v5-input" value={form.pincode} onChange={set('pincode')} maxLength={6} />
                       </Field>
                     </div>
                     <Field label="Address proof type">
-                      <select className="auth-input" value={form.addressProofType} onChange={set('addressProofType')}>
+                      <select className="v5-input" value={form.addressProofType} onChange={set('addressProofType')}>
                         <option>Aadhaar</option>
                         <option>Passport</option>
                         <option>Voter ID</option>
@@ -249,13 +293,13 @@ export default function Kyc() {
                 {step === 2 && (
                   <>
                     <Field label="Bank account number">
-                      <input className="auth-input" value={form.accountNumber} onChange={set('accountNumber')} />
+                      <input className="v5-input" value={form.accountNumber} onChange={set('accountNumber')} />
                     </Field>
                     <Field label="Confirm account number">
-                      <input className="auth-input" value={form.confirmAccountNumber} onChange={set('confirmAccountNumber')} />
+                      <input className="v5-input" value={form.confirmAccountNumber} onChange={set('confirmAccountNumber')} />
                     </Field>
                     <Field label="IFSC code">
-                      <input className="auth-input uppercase" value={form.ifsc} onChange={set('ifsc')} placeholder="HDFC0001234" maxLength={11} />
+                      <input className="v5-input uppercase" value={form.ifsc} onChange={set('ifsc')} placeholder="HDFC0001234" maxLength={11} />
                     </Field>
                     <UploadBox
                       label="Cancelled cheque / bank statement"
@@ -270,7 +314,7 @@ export default function Kyc() {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Occupation">
-                        <select className="auth-input" value={form.occupation} onChange={set('occupation')}>
+                        <select className="v5-input" value={form.occupation} onChange={set('occupation')}>
                           <option value="">Select</option>
                           {OCCUPATIONS.map((o) => (
                             <option key={o}>{o}</option>
@@ -278,7 +322,7 @@ export default function Kyc() {
                         </select>
                       </Field>
                       <Field label="Annual income">
-                        <select className="auth-input" value={form.incomeRange} onChange={set('incomeRange')}>
+                        <select className="v5-input" value={form.incomeRange} onChange={set('incomeRange')}>
                           <option value="">Select</option>
                           {INCOME_RANGES.map((r) => (
                             <option key={r}>{r}</option>
@@ -287,41 +331,48 @@ export default function Kyc() {
                       </Field>
                     </div>
                     <Field label="Trading experience">
-                      <select className="auth-input" value={form.experience} onChange={set('experience')}>
+                      <select className="v5-input" value={form.experience} onChange={set('experience')}>
                         <option value="">Select</option>
                         {EXPERIENCE.map((e) => (
                           <option key={e}>{e}</option>
                         ))}
                       </select>
                     </Field>
-                    <div className="input-group">
-                      <label className="input-label">Segments to activate</label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="v5-body text-xs" style={{ color: SUB }}>Segments to activate</label>
                       <div className="grid grid-cols-2 gap-2 mt-1">
-                        {SEGMENTS.map((seg) => (
-                          <motion.label
-                            key={seg}
-                            whileTap={{ scale: 0.97 }}
-                            className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer text-xs transition-colors ${
-                              form.segments.includes(seg) ? 'border-teal/50 bg-teal/5 text-bone' : 'border-border text-slate'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="w-3.5 h-3.5 accent-teal"
-                              checked={form.segments.includes(seg)}
-                              onChange={() => toggleSegment(seg)}
-                            />
-                            {seg}
-                          </motion.label>
-                        ))}
+                        {SEGMENTS.map((seg) => {
+                          const checked = form.segments.includes(seg);
+                          return (
+                            <motion.label
+                              key={seg}
+                              whileTap={{ scale: 0.97 }}
+                              className="v5-seg-option v5-body flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer text-xs"
+                              style={{
+                                borderColor: checked ? `${TEAL}80` : BORDER,
+                                background: checked ? `${TEAL}0D` : 'transparent',
+                                color: checked ? TEXT : SUB,
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                className="w-3.5 h-3.5"
+                                style={{ accentColor: TEAL }}
+                                checked={checked}
+                                onChange={() => toggleSegment(seg)}
+                              />
+                              {seg}
+                            </motion.label>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <Field label="Nominee full name">
-                        <input className="auth-input" value={form.nomineeName} onChange={set('nomineeName')} />
+                        <input className="v5-input" value={form.nomineeName} onChange={set('nomineeName')} />
                       </Field>
                       <Field label="Relationship">
-                        <select className="auth-input" value={form.nomineeRelation} onChange={set('nomineeRelation')}>
+                        <select className="v5-input" value={form.nomineeRelation} onChange={set('nomineeRelation')}>
                           <option value="">Select</option>
                           {RELATIONS.map((r) => (
                             <option key={r}>{r}</option>
@@ -348,7 +399,7 @@ export default function Kyc() {
 
                 {step === 5 && (
                   <>
-                    <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
+                    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
                       {[
                         ['Name', form.fullName || '—'],
                         ['PAN', form.pan || '—'],
@@ -356,10 +407,14 @@ export default function Kyc() {
                         ['Bank account', form.accountNumber ? `•••• ${form.accountNumber.slice(-4)}` : '—'],
                         ['Segments', form.segments.length ? form.segments.join(', ') : '—'],
                         ['Nominee', form.nomineeName || '—'],
-                      ].map(([k, v]) => (
-                        <div key={k} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                          <span className="text-slate">{k}</span>
-                          <span className="text-bone font-mono truncate max-w-[60%] text-right">{v}</span>
+                      ].map(([k, v], idx, arr) => (
+                        <div
+                          key={k}
+                          className="flex items-center justify-between px-4 py-2.5 text-xs"
+                          style={{ borderTop: idx === 0 ? 'none' : `1px solid ${BORDER}` }}
+                        >
+                          <span className="v5-body" style={{ color: SUB }}>{k}</span>
+                          <span className="v5-mono truncate max-w-[60%] text-right" style={{ color: TEXT }}>{v}</span>
                         </div>
                       ))}
                     </div>
@@ -369,12 +424,13 @@ export default function Kyc() {
                         type="checkbox"
                         checked={form.agreeTerms}
                         onChange={(e) => setForm((f) => ({ ...f, agreeTerms: e.target.checked }))}
-                        className="mt-0.5 w-4 h-4 rounded border-border bg-ink accent-teal"
+                        className="mt-0.5 w-4 h-4 rounded"
+                        style={{ background: INK, border: `1px solid ${BORDER}`, accentColor: TEAL }}
                       />
-                      <span className="text-xs text-slate leading-relaxed group-hover:text-bone transition-colors">
+                      <span className="v5-body text-xs leading-relaxed" style={{ color: SUB }}>
                         I confirm the details above are accurate and agree to the{' '}
-                        <span className="text-teal hover:underline cursor-pointer">Account Opening Terms</span> and{' '}
-                        <span className="text-teal hover:underline cursor-pointer">Risk Disclosure Document</span>.
+                        <span style={{ color: TEAL }} className="hover:underline cursor-pointer">Account Opening Terms</span> and{' '}
+                        <span style={{ color: TEAL }} className="hover:underline cursor-pointer">Risk Disclosure Document</span>.
                       </span>
                     </label>
 
@@ -383,9 +439,10 @@ export default function Kyc() {
                         type="checkbox"
                         checked={form.agreeEsign}
                         onChange={(e) => setForm((f) => ({ ...f, agreeEsign: e.target.checked }))}
-                        className="mt-0.5 w-4 h-4 rounded border-border bg-ink accent-gold"
+                        className="mt-0.5 w-4 h-4 rounded"
+                        style={{ background: INK, border: `1px solid ${BORDER}`, accentColor: BLUE }}
                       />
-                      <span className="text-xs text-slate leading-relaxed group-hover:text-bone transition-colors">
+                      <span className="v5-body text-xs leading-relaxed" style={{ color: SUB }}>
                         I authorise vestIQ to verify my Aadhaar via UIDAI and e-sign my KYC form using an
                         OTP sent to my registered mobile number.
                       </span>
@@ -400,7 +457,8 @@ export default function Kyc() {
                 onClick={back}
                 disabled={step === 0}
                 whileHover={step !== 0 ? { x: -2 } : {}}
-                className="auth-btn flex items-center gap-1.5 px-4 py-2.5 text-sm text-slate disabled:opacity-0"
+                className="v5-btn flex items-center gap-1.5 px-4 py-2.5"
+                style={{ color: SUB, opacity: step === 0 ? 0 : 1 }}
               >
                 <ChevronLeft size={15} />
                 Back
@@ -410,14 +468,14 @@ export default function Kyc() {
                 disabled={isLast && !canSubmit}
                 whileHover={!(isLast && !canSubmit) ? { scale: 1.02 } : {}}
                 whileTap={!(isLast && !canSubmit) ? { scale: 0.98 } : {}}
-                className="auth-btn auth-btn-primary px-6 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="v5-btn v5-btn-primary px-6 py-2.5"
               >
                 {isLast ? 'Submit for verification' : 'Continue'}
               </motion.button>
             </div>
           </div>
 
-          <p className="text-slate text-[11px] text-center mt-5">
+          <p className="v5-body text-[11px] text-center mt-5" style={{ color: MUTE }}>
             Step {step + 1} of {STEPS.length} · Your data is encrypted and used only for regulatory verification.
           </p>
         </div>

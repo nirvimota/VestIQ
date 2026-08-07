@@ -1,3 +1,4 @@
+// C:\nirvi\vestIQ\frontend\src\pages\Portfolio.jsx
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -5,17 +6,21 @@ import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
 
 // ---------------------------------------------------------------------------
-// vestIQ — Portfolio v2
-// Fixes a layout bug from the previous pass: the root wrapper used
-// `grid grid-rows-2`, which stacked the sidebar and content into separate
-// rows instead of placing them side by side — the sidebar ended up squashed
-// into the top half of the screen. Now a plain flex row like every other
-// page. Also swapped the duplicated inline sidebar for the shared one (which
-// fixes the same undeclared-`location` bug described there), added the
-// shared ambient background, and layered in motion: the price chart redraws
-// with a smooth path animation on stock/range switch, holding cards lift on
-// hover, and the range tabs get a sliding active pill.
+// vestIQ — Portfolio v3
+// Same structure/layout as v2, recoloured onto the shared v5.1 token system
+// (INK/CARD/BORDER/TEXT/SUB/MUTE/TEAL/RED + v5-display/v5-mono/v5-body) so it
+// matches Dashboard, OrderHistory, and Intraday instead of the old zinc/
+// emerald/rose Tailwind palette.
 // ---------------------------------------------------------------------------
+
+const INK = '#0A0F1A';
+const CARD = '#111826';
+const BORDER = '#1E2838';
+const TEXT = '#ECEEF0';
+const SUB = '#8A93A6';
+const MUTE = '#4E5A70';
+const TEAL = '#2ED9B8';
+const RED = '#EF5A5A';
 
 const HOLDINGS = [
   { symbol: 'RELIANCE', name: 'Reliance Industries', qty: 10, avg: 2780.0, ltp: 2945.6, up: true },
@@ -65,7 +70,7 @@ function Sparkline({ data, up, width = 84, height = 32 }) {
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
   const path = `M${points.join(' L')}`;
-  const color = up ? '#34d399' : '#fb7185';
+  const color = up ? TEAL : RED;
   const areaPath = `${path} L${width},${height} L0,${height} Z`;
   const gradId = `grad-${up ? 'up' : 'down'}-${Math.round(min)}`;
   return (
@@ -110,7 +115,21 @@ export default function Portfolio() {
   const chartData = useMemo(() => genSeries(active.symbol + range, 30), [active.symbol, range]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans flex relative">
+    <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
+        .v5-display { font-family: 'Space Grotesk', sans-serif; }
+        .v5-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+        .v5-body { font-family: 'Inter', sans-serif; }
+        .v5-card { background: ${CARD}; border: 1px solid ${BORDER}; transition: border-color 0.2s ease; }
+        .v5-hold-btn { transition: border-color 0.15s ease, background 0.15s ease; }
+        .v5-watch-row { transition: background 0.15s ease; }
+        .v5-watch-row:hover { background: rgba(255,255,255,0.03); }
+        .v5-add-btn { transition: border-color 0.15s ease, color 0.15s ease; }
+        .v5-add-btn:hover { color: ${TEXT}; border-color: rgba(255,255,255,0.24); }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+      `}</style>
+
       <AmbientBackground opacity={0.1} />
       <Sidebar />
 
@@ -119,12 +138,12 @@ export default function Portfolio() {
           {/* Header */}
           <div className="flex items-end justify-between mb-6">
             <div>
-              <p className="text-zinc-500 text-xs font-mono tracking-wide uppercase mb-1">My Portfolio</p>
-              <h1 className="text-2xl font-semibold tracking-tight">₹{fmtINR(totalValue)}</h1>
+              <p className="v5-mono text-xs tracking-wide uppercase mb-1" style={{ color: MUTE }}>My Portfolio</p>
+              <h1 className="v5-display text-2xl" style={{ color: TEXT }}>₹{fmtINR(totalValue)}</h1>
             </div>
             <div className="text-right">
-              <p className="text-zinc-500 text-xs font-mono uppercase mb-1">Total P&amp;L</p>
-              <p className={`font-mono text-lg ${totalUp ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <p className="v5-mono text-xs uppercase mb-1" style={{ color: MUTE }}>Total P&amp;L</p>
+              <p className="v5-mono text-lg" style={{ color: totalUp ? TEAL : RED }}>
                 {totalUp ? '+' : ''}₹{fmtINR(Math.abs(totalPnl))}
               </p>
             </div>
@@ -141,19 +160,19 @@ export default function Portfolio() {
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-                  className={`shrink-0 w-[190px] text-left rounded-xl border px-4 py-3 transition-colors
-                    ${isActive ? 'bg-zinc-900 border-emerald-400/50' : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'}`}
+                  className="v5-hold-btn v5-card shrink-0 w-[190px] text-left rounded-xl px-4 py-3"
+                  style={{ borderColor: isActive ? `${TEAL}80` : BORDER }}
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-mono text-sm font-medium">{h.symbol}</p>
-                      <p className="text-zinc-500 text-[11px]">{h.qty} qty</p>
+                      <p className="v5-mono text-sm font-medium" style={{ color: TEXT }}>{h.symbol}</p>
+                      <p className="v5-body text-[11px]" style={{ color: MUTE }}>{h.qty} qty</p>
                     </div>
                     <Sparkline data={h.series} up={h.up} width={56} height={24} />
                   </div>
                   <div className="flex items-baseline justify-between mt-3">
-                    <span className="font-mono text-sm">₹{fmtINR(h.ltp)}</span>
-                    <span className={`font-mono text-xs ${h.up ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className="v5-mono text-sm" style={{ color: TEXT }}>₹{fmtINR(h.ltp)}</span>
+                    <span className="v5-mono text-xs" style={{ color: h.up ? TEAL : RED }}>
                       {h.up ? '+' : ''}
                       {h.pnlPct.toFixed(2)}%
                     </span>
@@ -166,10 +185,10 @@ export default function Portfolio() {
           {/* Main area: chart + watchlist */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
             {/* Chart panel */}
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
+            <div className="v5-card rounded-xl p-5">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="font-mono text-xs text-zinc-500 uppercase tracking-wide">{active.name}</p>
+                  <p className="v5-mono text-xs uppercase tracking-wide" style={{ color: MUTE }}>{active.name}</p>
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={active.symbol}
@@ -179,26 +198,27 @@ export default function Portfolio() {
                       transition={{ duration: 0.18 }}
                       className="flex items-baseline gap-2 mt-1"
                     >
-                      <h2 className="font-mono text-2xl">₹{fmtINR(active.ltp)}</h2>
-                      <span className={`font-mono text-sm ${active.up ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <h2 className="v5-mono text-2xl" style={{ color: TEXT }}>₹{fmtINR(active.ltp)}</h2>
+                      <span className="v5-mono text-sm" style={{ color: active.up ? TEAL : RED }}>
                         {active.up ? '+' : ''}
                         {active.pnlPct.toFixed(2)}%
                       </span>
                     </motion.div>
                   </AnimatePresence>
                 </div>
-                <div className="relative flex gap-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1">
+                <div className="relative flex gap-1 rounded-lg p-1" style={{ background: INK, border: `1px solid ${BORDER}` }}>
                   {RANGES.map((r) => (
                     <button
                       key={r}
                       onClick={() => setRange(r)}
-                      className="relative px-2.5 py-1 text-[11px] font-mono rounded-md transition-colors"
-                      style={{ color: range === r ? '#f4f4f5' : '#71717a' }}
+                      className="v5-mono relative px-2.5 py-1 text-[11px] rounded-md"
+                      style={{ color: range === r ? TEXT : MUTE }}
                     >
                       {range === r && (
                         <motion.div
                           layoutId="range-active-pill"
-                          className="absolute inset-0 bg-zinc-800 rounded-md"
+                          className="absolute inset-0 rounded-md"
+                          style={{ background: '#1A2333' }}
                           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         />
                       )}
@@ -213,34 +233,36 @@ export default function Portfolio() {
                   <LineChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                     <defs>
                       <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={active.up ? '#34d399' : '#fb7185'} stopOpacity={0.25} />
-                        <stop offset="100%" stopColor={active.up ? '#34d399' : '#fb7185'} stopOpacity={0} />
+                        <stop offset="0%" stopColor={active.up ? TEAL : RED} stopOpacity={0.25} />
+                        <stop offset="100%" stopColor={active.up ? TEAL : RED} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#27272a" vertical={false} />
+                    <CartesianGrid stroke={BORDER} vertical={false} />
                     <XAxis dataKey="i" hide />
                     <YAxis
                       domain={['dataMin - 4', 'dataMax + 4']}
-                      tick={{ fill: '#71717a', fontSize: 11, fontFamily: 'monospace' }}
+                      tick={{ fill: MUTE, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}
                       axisLine={false}
                       tickLine={false}
                       width={40}
                     />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #27272a',
+                        background: CARD,
+                        border: `1px solid ${BORDER}`,
                         borderRadius: 8,
-                        fontFamily: 'monospace',
+                        fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 12,
                       }}
+                      labelStyle={{ color: TEXT }}
+                      itemStyle={{ color: TEXT }}
                       labelFormatter={() => active.symbol}
                       formatter={(v) => [`₹${v.toFixed(2)}`, 'Price']}
                     />
                     <Line
                       type="monotone"
                       dataKey="v"
-                      stroke={active.up ? '#34d399' : '#fb7185'}
+                      stroke={active.up ? TEAL : RED}
                       strokeWidth={2}
                       dot={false}
                       isAnimationActive
@@ -250,18 +272,18 @@ export default function Portfolio() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-zinc-800">
+              <div className="grid grid-cols-3 gap-3 mt-5 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
                 <div>
-                  <p className="text-zinc-500 text-[11px] font-mono uppercase">Avg. price</p>
-                  <p className="font-mono text-sm mt-0.5">₹{fmtINR(active.avg)}</p>
+                  <p className="v5-mono text-[11px] uppercase" style={{ color: MUTE }}>Avg. price</p>
+                  <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>₹{fmtINR(active.avg)}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 text-[11px] font-mono uppercase">Quantity</p>
-                  <p className="font-mono text-sm mt-0.5">{active.qty}</p>
+                  <p className="v5-mono text-[11px] uppercase" style={{ color: MUTE }}>Quantity</p>
+                  <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>{active.qty}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 text-[11px] font-mono uppercase">Unrealised P&amp;L</p>
-                  <p className={`font-mono text-sm mt-0.5 ${active.up ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <p className="v5-mono text-[11px] uppercase" style={{ color: MUTE }}>Unrealised P&amp;L</p>
+                  <p className="v5-mono text-sm mt-0.5" style={{ color: active.up ? TEAL : RED }}>
                     {active.up ? '+' : ''}₹{fmtINR(Math.abs(active.pnl))}
                   </p>
                 </div>
@@ -269,10 +291,13 @@ export default function Portfolio() {
             </div>
 
             {/* Watchlist */}
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+            <div className="v5-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="font-mono text-xs text-zinc-500 uppercase tracking-wide">Watchlist</p>
-                <button className="text-zinc-500 hover:text-zinc-200 hover:border-zinc-600 text-sm leading-none w-6 h-6 rounded-md border border-zinc-800 flex items-center justify-center transition-colors">
+                <p className="v5-mono text-xs uppercase tracking-wide" style={{ color: MUTE }}>Watchlist</p>
+                <button
+                  className="v5-add-btn text-sm leading-none w-6 h-6 rounded-md flex items-center justify-center"
+                  style={{ color: MUTE, border: `1px solid ${BORDER}` }}
+                >
                   +
                 </button>
               </div>
@@ -283,15 +308,15 @@ export default function Portfolio() {
                     <motion.div
                       key={w.symbol}
                       whileHover={{ x: 2 }}
-                      className="flex items-center justify-between px-2 py-2.5 rounded-lg hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                      className="v5-watch-row flex items-center justify-between px-2 py-2.5 rounded-lg cursor-pointer"
                     >
                       <div>
-                        <p className="font-mono text-sm">{w.symbol}</p>
-                        <p className="text-zinc-500 text-[11px]">{w.name}</p>
+                        <p className="v5-mono text-sm" style={{ color: TEXT }}>{w.symbol}</p>
+                        <p className="v5-body text-[11px]" style={{ color: MUTE }}>{w.name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono text-sm">₹{fmtINR(w.ltp)}</p>
-                        <p className={`font-mono text-[11px] ${up ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{fmtINR(w.ltp)}</p>
+                        <p className="v5-mono text-[11px]" style={{ color: up ? TEAL : RED }}>
                           {up ? '+' : ''}
                           {w.chg.toFixed(2)}%
                         </p>
