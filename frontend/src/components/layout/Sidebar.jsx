@@ -30,8 +30,6 @@ const NAV_ITEMS = [
   { label: 'Transactions', icon: Send, to: '/orders' },
   { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
   { label: 'Market', icon: ShoppingBag, to: '/market' },
-  { label: 'IntraDay', icon: ShoppingBag, to: '/IntraDay' },
-  { label: 'Long term', icon: ShoppingBag, to: '/Long-term' },
   { label: 'Alerts', icon: Bell, to: '/alerts' }
 ];
 

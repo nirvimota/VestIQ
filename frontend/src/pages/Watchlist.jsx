@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, X, Loader2, Star, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
@@ -7,7 +7,7 @@ import AmbientBackground from '../components/layout/AmbientBackground';
 import { useAuth } from '../context/AuthContext';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../services/watchlistApi';
 import { searchStocks, getStockQuote } from '../services/stockApi';
-
+import market from './market'
 function fmt(n) {
   return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -143,11 +143,10 @@ export default function Watchlist() {
             </button>
             <button
               onClick={() => { setShowAdd(v => !v); setSearch(''); setSearchResults([]); }}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                showAdd
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showAdd
                   ? 'bg-[#1E2838] text-[#8A93A6]'
                   : 'bg-[#2ED9B8] text-[#0A0F1A] hover:opacity-90'
-              }`}
+                }`}
             >
               <Plus size={15} />
               {showAdd ? 'Close' : 'Add Stock'}
@@ -259,7 +258,7 @@ export default function Watchlist() {
             <div className="flex flex-col items-center py-16 text-center">
               <Star size={40} className="text-[#2ED9B8] mb-4 opacity-40" />
               <p className="text-[#8A93A6] text-sm">Your watchlist is empty.</p>
-              <p className="text-[#4E5A70] text-xs mt-1">Click <strong className="text-[#2ED9B8]">Add Stock</strong> to track NSE stocks.</p>
+              <p className="text-[#4E5A70] text-xs mt-1">Click <strong className="text-[#2ED9B8]"><a href='/market'>  Add Stock </a></strong> to track NSE stocks.</p>
             </div>
           ) : (
             <AnimatePresence>
