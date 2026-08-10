@@ -1,7 +1,8 @@
 // C:\nirvi\vestIQ\frontend\src\pages\OrderTicket.jsx
-import { useContext, useState, useMemo } from "react";
+import { useContext, useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TradingContext } from "../context/TradingContext";
+import { getStockQuote } from "../services/stockApi";
 
 // same mock market list Watchlist's "+ Add stock" panel uses
 // (kept here too so this page works standalone if opened directly)
@@ -18,7 +19,10 @@ export default function OrderTicket() {
   const navigate = useNavigate();
   const { addTransaction, addToWatchlist } = useContext(TradingContext);
 
-  const stock = useMemo(
+  const [livePrice, setLivePrice] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fallbackStock = useMemo(
     () => MOCK_MARKET.find((s) => s.symbol === symbol) ?? {
       symbol,
       name: symbol,
@@ -27,20 +31,41 @@ export default function OrderTicket() {
     [symbol]
   );
 
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    getStockQuote(symbol)
+      .then((data) => {
+        if (isMounted && data && data.price) {
+          setLivePrice(data.price);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load order price:', err);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [symbol]);
+
+  const stockPrice = livePrice !== null ? livePrice : fallbackStock.price;
   const [qty, setQty] = useState(1);
   const [placed, setPlaced] = useState(false);
 
-  const total = (stock.price * qty).toFixed(2);
+  const total = (stockPrice * qty).toFixed(2);
 
   const handleBuy = () => {
     if (qty < 1) return;
     addTransaction({
-      symbol: stock.symbol,
+      symbol: symbol,
       type: "BUY",
       qty: Number(qty),
-      price: stock.price,
+      price: stockPrice,
     });
-    addToWatchlist(stock.symbol);
+    addToWatchlist(symbol);
     setPlaced(true);
     setTimeout(() => navigate("/portfolio"), 900);
   };
@@ -54,12 +79,14 @@ export default function OrderTicket() {
         ← Back
       </button>
 
-      <h1 className="text-xl font-semibold">{stock.symbol}</h1>
-      <p className="text-sm text-gray-500 mb-4">{stock.name}</p>
+      <h1 className="text-xl font-semibold">{symbol}</h1>
+      <p className="text-sm text-gray-500 mb-4">{fallbackStock.name}</p>
 
       <div className="rounded-xl border border-gray-200 p-4 mb-4">
         <p className="text-sm text-gray-500">Current Price</p>
-        <p className="text-2xl font-semibold text-white">₹{stock.price.toFixed(2)}</p>
+        <p className="text-2xl font-semibold text-white">
+          {loading ? "Loading..." : `₹${stockPrice.toFixed(2)}`}
+        </p>
       </div>
 
       <label className="block text-sm text-gray-600 mb-1">Quantity</label>
