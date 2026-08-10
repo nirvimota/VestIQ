@@ -38,18 +38,23 @@ export default function StockDetail() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
     async function loadQuote() {
       try {
-        setLoadingQuote(true);
         const data = await getStockQuote(symbol);
-        setQuote(data);
+        if (isMounted) setQuote(data);
       } catch (err) {
-        setError(err.message || 'Failed to fetch quote');
+        if (isMounted) setError(err.message || 'Failed to fetch quote');
       } finally {
-        setLoadingQuote(false);
+        if (isMounted) setLoadingQuote(false);
       }
     }
     loadQuote();
+    const interval = setInterval(loadQuote, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [symbol]);
 
   const handleFetchAI = async () => {

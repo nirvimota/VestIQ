@@ -343,33 +343,42 @@ export default function LiveMarket() {
   }, [token]);
 
   useEffect(() => {
-    setLoadingPrices(true);
-    setStocks(DEFAULT_SYMBOLS.map((s) => ({ ...s, price: null, change_pct: null, _loading: true })));
+    let isMounted = true;
 
     const fetchPrices = async () => {
       try {
         const symbolList = DEFAULT_SYMBOLS.map((s) => s.symbol);
         const quotesMap = await getStockQuotes(symbolList);
-        setStocks(
-          DEFAULT_SYMBOLS.map((s) => ({
-            ...s,
-            ...(quotesMap[s.symbol] || {}),
-            _loading: false,
-            _error: !quotesMap[s.symbol] || quotesMap[s.symbol]._unavailable,
-          }))
-        );
+        if (isMounted) {
+          setStocks(
+            DEFAULT_SYMBOLS.map((s) => ({
+              ...s,
+              ...(quotesMap[s.symbol] || {}),
+              _loading: false,
+              _error: !quotesMap[s.symbol] || quotesMap[s.symbol]._unavailable,
+            }))
+          );
+        }
       } catch (err) {
         console.error('Batch quote fetch failed, falling back to individual calls:', err);
         const results = await Promise.allSettled(
           DEFAULT_SYMBOLS.map((s) => getStockQuote(s.symbol).then((q) => ({ ...s, ...q, _loading: false })))
         );
-        setStocks(results.map((r, i) => (r.status === 'fulfilled' ? r.value : { ...DEFAULT_SYMBOLS[i], _loading: false, _error: true })));
+        if (isMounted) {
+          setStocks(results.map((r, i) => (r.status === 'fulfilled' ? r.value : { ...DEFAULT_SYMBOLS[i], _loading: false, _error: true })));
+        }
       } finally {
-        setLoadingPrices(false);
+        if (isMounted) setLoadingPrices(false);
       }
     };
 
     fetchPrices();
+    const intervalId = setInterval(fetchPrices, 2000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   useEffect(() => {
