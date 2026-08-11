@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
+import { useAuth } from '../context/AuthContext';
+import { getFormattedUser } from '../utils/userUtils';
 
 // ---------------------------------------------------------------------------
 // vestIQ — Dashboard v5.3
@@ -142,6 +144,8 @@ function SuggestionCard({ s, onOpen }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { profile, user: authUser } = useAuth();
+  const currentUser = getFormattedUser(profile, authUser);
 
   const openStock = (symbol) => {
     navigate(`/stock/${symbol}`, { state: { backgroundLocation: location } });
@@ -192,11 +196,11 @@ export default function Dashboard() {
               </button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[11px] font-bold" style={{ background: TEAL, color: INK }}>
-                  AM
+                  {currentUser.initials}
                 </div>
                 <div className="hidden sm:block">
-                  <p className="v5-body text-xs" style={{ color: TEXT }}>Alex Morgan</p>
-                  <p className="v5-body text-[10px]" style={{ color: MUTE }}>Investor</p>
+                  <p className="v5-body text-xs" style={{ color: TEXT }}>{currentUser.name}</p>
+                  <p className="v5-body text-[10px]" style={{ color: MUTE }}>{currentUser.role || 'Investor'}</p>
                 </div>
               </div>
             </div>

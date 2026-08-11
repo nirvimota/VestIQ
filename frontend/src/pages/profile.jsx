@@ -1,15 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { getFormattedUser } from '../utils/userUtils';
 
 /**
  * Profile — personal details page.
- *
- * Props:
- *   user: {
- *     name, email, phone, dob, pan, address,
- *     kycStatus: 'verified' | 'pending' | 'rejected',
- *     accountId, joinedOn
- *   }
- *   onSave: (updatedUser) => void   // called with the edited fields on Save
  */
 
 const DEFAULT_USER = {
@@ -39,17 +33,38 @@ const FIELDS = [
   ['address', 'Address'],
 ];
 
-export default function Profile({ user = DEFAULT_USER, onSave = () => {} }) {
+export default function Profile({ user: propUser, onSave = () => { } }) {
+  const { profile, user: authUser, updateProfile } = useAuth();
+  const formattedUser = getFormattedUser(profile, authUser);
+
+  const mergedUser = {
+    ...DEFAULT_USER,
+    name: formattedUser.name,
+    email: profile?.email || authUser?.email || DEFAULT_USER.email,
+    phone: profile?.phone || DEFAULT_USER.phone,
+    pan: profile?.pan || DEFAULT_USER.pan,
+    address: profile?.address || DEFAULT_USER.address,
+    ...(propUser || {}),
+  };
+
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState(user);
+  const [form, setForm] = useState(mergedUser);
 
-  const initials = user.name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2);
+  useEffect(() => {
+    setForm(mergedUser);
+  }, [profile, authUser]);
 
-  const handleSave = () => {
+  const initials = formattedUser.initials;
+
+  const handleSave = async () => {
+    if (updateProfile && profile) {
+      await updateProfile({
+        full_name: form.name,
+        phone: form.phone,
+        pan: form.pan,
+        address: form.address,
+      });
+    }
     onSave(form);
     setEditing(false);
   };
@@ -65,12 +80,12 @@ export default function Profile({ user = DEFAULT_USER, onSave = () => {} }) {
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold">{user.name}</p>
-            <p className="text-zinc-500 text-xs font-mono mt-0.5">{user.accountId}</p>
-            <p className="text-zinc-500 text-xs mt-0.5">Member since {user.joinedOn}</p>
+            <p className="font-semibold">{mergedUser.name}</p>
+            <p className="text-zinc-500 text-xs font-mono mt-0.5">{mergedUser.accountId}</p>
+            <p className="text-zinc-500 text-xs mt-0.5">Member since {mergedUser.joinedOn}</p>
           </div>
-          <span className={`px-2.5 py-1 rounded-md text-xs font-medium shrink-0 ${KYC_STYLE[user.kycStatus]}`}>
-            KYC {user.kycStatus[0].toUpperCase() + user.kycStatus.slice(1)}
+          <span className={`px-2.5 py-1 rounded-md text-xs font-medium shrink-0 ${KYC_STYLE[mergedUser.kycStatus]}`}>
+            KYC {mergedUser.kycStatus[0].toUpperCase() + mergedUser.kycStatus.slice(1)}
           </span>
         </div>
 
@@ -81,7 +96,7 @@ export default function Profile({ user = DEFAULT_USER, onSave = () => {} }) {
             {!editing ? (
               <button
                 onClick={() => {
-                  setForm(user);
+                  setForm(mergedUser);
                   setEditing(true);
                 }}
                 className="text-emerald-400 text-sm font-medium hover:text-emerald-300"
@@ -106,12 +121,12 @@ export default function Profile({ user = DEFAULT_USER, onSave = () => {} }) {
                 <span className="text-zinc-500 text-sm col-span-1">{label}</span>
                 {editing ? (
                   <input
-                    value={form[key]}
+                    value={form[key] || ''}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                     className="col-span-2 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-emerald-400/50"
                   />
                 ) : (
-                  <span className="col-span-2 text-sm">{user[key]}</span>
+                  <span className="col-span-2 text-sm">{mergedUser[key]}</span>
                 )}
               </div>
             ))}

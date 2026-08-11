@@ -23,6 +23,9 @@ import {
 // snapping — the main "more interactive" ask.
 // ---------------------------------------------------------------------------
 
+import { useAuth } from '../../context/AuthContext';
+import { getFormattedUser } from '../../utils/userUtils';
+
 const NAV_ITEMS = [
   { label: 'Overview', icon: Home, to: '/dashboard' },
   { label: 'Portfolio', icon: LineChartIcon, to: '/portfolio' },
@@ -39,8 +42,10 @@ const INK = '#0A0F1A';
 const SUB = '#8A93A6';
 const BORDER = '#1E2838';
 
-export default function Sidebar({ user = { name: 'Alex Morgan', initials: 'AM' } }) {
+export default function Sidebar({ user: propUser }) {
   const location = useLocation();
+  const { profile, user: authUser } = useAuth();
+  const currentUser = propUser || getFormattedUser(profile, authUser);
 
   return (
     <aside
@@ -90,11 +95,11 @@ export default function Sidebar({ user = { name: 'Alex Morgan', initials: 'AM' }
             className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
             style={{ background: TEAL, color: INK, fontFamily: "'IBM Plex Mono', monospace" }}
           >
-            {user.initials}
+            {currentUser.initials}
           </div>
           <div className="min-w-0">
-            <p className="text-xs truncate" style={{ color: '#ECEEF0', fontFamily: "'Inter', sans-serif" }}>{user.name}</p>
-            <p className="text-[10px]" style={{ color: '#4E5A70', fontFamily: "'IBM Plex Mono', monospace" }}>Investor</p>
+            <p className="text-xs truncate" style={{ color: '#ECEEF0', fontFamily: "'Inter', sans-serif" }}>{currentUser.name}</p>
+            <p className="text-[10px]" style={{ color: '#4E5A70', fontFamily: "'IBM Plex Mono', monospace" }}>{currentUser.role || 'Investor'}</p>
           </div>
         </div>
       </div>
