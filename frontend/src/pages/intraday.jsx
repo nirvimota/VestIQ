@@ -1,10 +1,10 @@
-// C:\nirvi\vestIQ\frontend\src\pages\Intraday.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, TrendingUp, TrendingDown, X } from "lucide-react";
+import { Clock, TrendingUp, TrendingDown, X, Search, Loader2, Sparkles } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
+import { searchStocks } from "../services/stockApi";
 
 const INK = "#0A0F1A";
 const CARD = "#111826";
@@ -64,10 +64,33 @@ export default function Intraday() {
   const navigate = useNavigate();
   const location = useLocation();
   const [tab, setTab] = useState("open");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const countdown = useSquareOffCountdown();
 
-  // opens StockDetail as a popup on desktop, a full page on mobile — same
-  // pattern as Dashboard's suggestion cards
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const results = await searchStocks(searchQuery);
+        setSearchResults(results || []);
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const openStock = (symbol) => {
     navigate(`/stock/${symbol}`, { state: { backgroundLocation: location } });
   };
@@ -76,6 +99,10 @@ export default function Intraday() {
   const totalPnl = positions.reduce((sum, p) => sum + p.pnl.amount, 0);
   const totalInvested = positions.reduce((sum, p) => sum + p.avg * p.qty, 0);
   const totalPnlPct = (totalPnl / totalInvested) * 100;
+
+  const filteredPositions = positions.filter((p) =>
+    p.symbol.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
 
   return (
     <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
@@ -97,7 +124,7 @@ export default function Intraday() {
       <main className="flex-1 min-w-0 relative">
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-7">
           <div className="flex items-center justify-between">
-            <h1 className="v5-display text-xl" style={{ color: TEXT }}>Intraday</h1>
+            <h1 className="v5-display text-xl" style={{ color: TEXT }}>Intraday Trading</h1>
             <div className="v5-card rounded-full px-3 py-1.5 flex items-center gap-2" style={{ color: SUB }}>
               <Clock size={13} style={{ color: TEAL }} />
               <span className="v5-body text-[11px]">
@@ -106,7 +133,73 @@ export default function Intraday() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          {/* Intraday Stock Search Bar */}
+          <div className="relative mt-6 mb-2">
+            <Search size={18} className="absolute left-4 top-3.5" style={{ color: SUB }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search intraday stocks (e.g. RELIANCE, TCS, HDFCBANK, INFY)..."
+              className="v5-body w-full rounded-xl pl-11 pr-4 py-3 text-sm outline-none transition-colors"
+              style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }}
+            />
+
+            {searchQuery.trim().length >= 2 && (
+              <div
+                className="absolute left-0 right-0 top-14 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto"
+                style={{ background: CARD, border: `1px solid ${BORDER}` }}
+              >
+                {isSearching ? (
+                  <div className="v5-mono p-4 text-xs flex items-center gap-2" style={{ color: SUB }}>
+                    <Loader2 size={13} className="animate-spin" /> Searching NSE market...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((item) => (
+                    <div
+                      key={item.symbol}
+                      className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors"
+                      style={{ borderBottom: `1px solid ${BORDER}` }}
+                      onClick={() => openStock(item.symbol)}
+                    >
+                      <div>
+                        <span className="v5-mono text-sm font-bold" style={{ color: TEAL }}>
+                          {item.symbol}
+                        </span>
+                        <p className="v5-body text-xs" style={{ color: SUB }}>
+                          {item.name}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="v5-mono text-[10px] px-2 py-0.5 rounded"
+                          style={{ color: MUTE, background: INK, border: `1px solid ${BORDER}` }}
+                        >
+                          {item.exchange || "NSE"}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/order/${item.symbol}?side=buy`);
+                          }}
+                          className="v5-body px-3 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: TEAL, color: INK }}
+                        >
+                          Trade Intraday
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="v5-body p-4 text-xs" style={{ color: SUB }}>
+                    No market results found for "{searchQuery}".
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
             <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 md:col-span-2">
               <p className="v5-body text-sm" style={{ color: SUB }}>Today's P&amp;L</p>
               <div className="flex items-center gap-2 mt-2">
@@ -159,8 +252,12 @@ export default function Intraday() {
               <p className="v5-body text-sm mt-4" style={{ color: MUTE }}>
                 No positions squared off yet today.
               </p>
+            ) : filteredPositions.length === 0 ? (
+              <p className="v5-body text-sm mt-4" style={{ color: MUTE }}>
+                No open positions match "{searchQuery}".
+              </p>
             ) : (
-              positions.map((p) => {
+              filteredPositions.map((p) => {
                 const spark = linePath(p.spark, 120, 36);
                 const up = p.pnl.amount >= 0;
                 return (
@@ -215,4 +312,4 @@ export default function Intraday() {
       </main>
     </div>
   );
-}
+}

@@ -105,14 +105,74 @@ function pnlFor(p) {
   return { amount: diff * p.qty, pct: (diff / p.avg) * 100 };
 }
 
-function IntradaySection({ onOpenStock }) {
+function IntradaySection({ onOpenStock, searchQuery, setSearchQuery, searchResults, isSearching, navigate, token, watchedSet, watchlistLoading, toggleWatchlist }) {
   const positions = useMemo(() => MOCK_POSITIONS.map((p) => ({ ...p, pnl: pnlFor(p) })), []);
   const totalPnl = positions.reduce((sum, p) => sum + p.pnl.amount, 0);
   const totalInvested = positions.reduce((sum, p) => sum + p.avg * p.qty, 0);
   const totalPnlPct = (totalPnl / totalInvested) * 100;
 
+  const filteredPositions = positions.filter((p) =>
+    p.symbol.toLowerCase().includes((searchQuery || '').toLowerCase().trim())
+  );
+
   return (
     <div>
+      {/* Search Bar for Intraday */}
+      <div className="relative mb-6">
+        <Search size={18} className="absolute left-4 top-3.5" style={{ color: SUB }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search intraday stock (e.g. RELIANCE, TCS, INFY, TATAMOTORS)..."
+          className="v5-body w-full rounded-xl pl-11 pr-4 py-3 text-sm outline-none transition-colors"
+          style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }}
+        />
+
+        {searchQuery && searchQuery.trim().length >= 2 && (
+          <div className="absolute left-0 right-0 top-14 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            {isSearching ? (
+              <div className="v5-mono p-4 text-xs flex items-center gap-2" style={{ color: SUB }}>
+                <Loader2 size={13} className="animate-spin" /> Searching NSE market...
+              </div>
+            ) : searchResults && searchResults.length > 0 ? (
+              searchResults.map((item) => (
+                <div
+                  key={item.symbol}
+                  className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors"
+                  style={{ borderBottom: `1px solid ${BORDER}` }}
+                  onClick={() => onOpenStock(item.symbol)}
+                >
+                  <div>
+                    <span className="v5-mono text-sm font-bold" style={{ color: TEAL }}>{item.symbol}</span>
+                    <p className="v5-body text-xs" style={{ color: SUB }}>{item.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="v5-mono text-[10px] px-2 py-0.5 rounded" style={{ color: MUTE, background: INK, border: `1px solid ${BORDER}` }}>
+                      {item.exchange || 'NSE'}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/order/${item.symbol}?side=buy`);
+                      }}
+                      className="v5-body px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: TEAL, color: INK }}
+                    >
+                      Trade Intraday
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="v5-body p-4 text-xs" style={{ color: SUB }}>
+                No market results found for "{searchQuery}".
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="v5-card rounded-2xl px-5 py-4">
           <p className="v5-body text-xs" style={{ color: SUB }}>Today's P&amp;L</p>
@@ -138,54 +198,60 @@ function IntradaySection({ onOpenStock }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {positions.map((p) => {
-          const spark = linePath(p.spark, 100, 32);
-          const up = p.pnl.amount >= 0;
-          return (
-            <motion.div
-              key={p.id}
-              whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.16)' }}
-              onClick={() => onOpenStock(p.symbol)}
-              className="v5-card rounded-xl px-4 py-3 flex items-center justify-between gap-4 cursor-pointer"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
-                  style={{ background: p.type === 'BUY' ? `${TEAL}1A` : `${RED}1A`, color: p.type === 'BUY' ? TEAL : RED }}
-                >
-                  {p.symbol.slice(0, 3)}
+        {filteredPositions.length === 0 ? (
+          <p className="v5-body text-sm py-4" style={{ color: MUTE }}>
+            No open positions match "{searchQuery}".
+          </p>
+        ) : (
+          filteredPositions.map((p) => {
+            const spark = linePath(p.spark, 100, 32);
+            const up = p.pnl.amount >= 0;
+            return (
+              <motion.div
+                key={p.id}
+                whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.16)' }}
+                onClick={() => onOpenStock(p.symbol)}
+                className="v5-card rounded-xl px-4 py-3 flex items-center justify-between gap-4 cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
+                    style={{ background: p.type === 'BUY' ? `${TEAL}1A` : `${RED}1A`, color: p.type === 'BUY' ? TEAL : RED }}
+                  >
+                    {p.symbol.slice(0, 3)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="v5-body text-sm font-medium truncate" style={{ color: TEXT }}>{p.symbol}</p>
+                    <p className="v5-mono text-[10px] mt-0.5" style={{ color: MUTE }}>
+                      {p.type} {p.qty} @ ₹{p.avg.toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="v5-body text-sm font-medium truncate" style={{ color: TEXT }}>{p.symbol}</p>
-                  <p className="v5-mono text-[10px] mt-0.5" style={{ color: MUTE }}>
-                    {p.type} {p.qty} @ ₹{p.avg.toFixed(2)}
+
+                <div className="hidden sm:block h-[32px] w-[100px] shrink-0">
+                  <svg viewBox="0 0 100 32" className="w-full h-full" preserveAspectRatio="none">
+                    <path d={spark} fill="none" stroke={up ? TEAL : RED} strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{p.ltp.toFixed(2)}</p>
+                  <p className="v5-mono text-[11px] mt-0.5" style={{ color: up ? TEAL : RED }}>
+                    {up ? '+' : '-'}₹{Math.abs(p.pnl.amount).toFixed(2)}
                   </p>
                 </div>
-              </div>
 
-              <div className="hidden sm:block h-[32px] w-[100px] shrink-0">
-                <svg viewBox="0 0 100 32" className="w-full h-full" preserveAspectRatio="none">
-                  <path d={spark} fill="none" stroke={up ? TEAL : RED} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </div>
-
-              <div className="text-right shrink-0">
-                <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{p.ltp.toFixed(2)}</p>
-                <p className="v5-mono text-[11px] mt-0.5" style={{ color: up ? TEAL : RED }}>
-                  {up ? '+' : '-'}₹{Math.abs(p.pnl.amount).toFixed(2)}
-                </p>
-              </div>
-
-              <button
-                onClick={(e) => e.stopPropagation()}
-                className="v5-body text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-full shrink-0"
-                style={{ color: RED, border: `1px solid ${RED}40` }}
-              >
-                <X size={10} /> Exit
-              </button>
-            </motion.div>
-          );
-        })}
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="v5-body text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-full shrink-0"
+                  style={{ color: RED, border: `1px solid ${RED}40` }}
+                >
+                  <X size={10} /> Exit
+                </button>
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -648,7 +714,18 @@ export default function LiveMarket() {
 
           {tab === 'intraday' && (
             <motion.div key="intraday" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-              <IntradaySection onOpenStock={handleStockClick} />
+              <IntradaySection
+                onOpenStock={handleStockClick}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                isSearching={isSearching}
+                navigate={navigate}
+                token={token}
+                watchedSet={watchedSet}
+                watchlistLoading={watchlistLoading}
+                toggleWatchlist={toggleWatchlist}
+              />
             </motion.div>
           )}
 
