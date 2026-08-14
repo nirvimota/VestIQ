@@ -271,7 +271,7 @@ function daysHeld(boughtOn) {
   return Math.floor((Date.now() - new Date(boughtOn).getTime()) / 86400000);
 }
 
-function LongTermSection({ onOpenStock }) {
+function LongTermSection({ onOpenStock, searchQuery, setSearchQuery, searchResults, isSearching, navigate, token, watchedSet, watchlistLoading, toggleWatchlist }) {
   const holdings = useMemo(
     () =>
       MOCK_HOLDINGS.map((h) => {
@@ -284,6 +284,12 @@ function LongTermSection({ onOpenStock }) {
     []
   );
 
+  const filteredHoldings = useMemo(() => {
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) return holdings;
+    return holdings.filter((h) => h.symbol.toLowerCase().includes(q));
+  }, [holdings, searchQuery]);
+
   const totalInvested = holdings.reduce((sum, h) => sum + h.avg * h.qty, 0);
   const totalValue = holdings.reduce((sum, h) => sum + h.ltp * h.qty, 0);
   const totalGain = totalValue - totalInvested;
@@ -291,6 +297,62 @@ function LongTermSection({ onOpenStock }) {
 
   return (
     <div>
+      {/* Search Bar for Long-term */}
+      <div className="relative mb-6">
+        <Search size={18} className="absolute left-4 top-3.5" style={{ color: SUB }} />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search long-term stock (e.g. RELIANCE, HDFCBANK, TCS, INFY)..."
+          className="v5-body w-full rounded-xl pl-11 pr-4 py-3 text-sm outline-none transition-colors"
+          style={{ background: CARD, border: `1px solid ${BORDER}`, color: TEXT }}
+        />
+
+        {searchQuery && searchQuery.trim().length >= 2 && (
+          <div className="absolute left-0 right-0 top-14 rounded-xl overflow-hidden z-30 max-h-72 overflow-y-auto" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            {isSearching ? (
+              <div className="v5-mono p-4 text-xs flex items-center gap-2" style={{ color: SUB }}>
+                <Loader2 size={13} className="animate-spin" /> Searching NSE market...
+              </div>
+            ) : searchResults && searchResults.length > 0 ? (
+              searchResults.map((item) => (
+                <div
+                  key={item.symbol}
+                  className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors"
+                  style={{ borderBottom: `1px solid ${BORDER}` }}
+                  onClick={() => onOpenStock(item.symbol)}
+                >
+                  <div>
+                    <span className="v5-mono text-sm font-bold" style={{ color: TEAL }}>{item.symbol}</span>
+                    <p className="v5-body text-xs" style={{ color: SUB }}>{item.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="v5-mono text-[10px] px-2 py-0.5 rounded" style={{ color: MUTE, background: INK, border: `1px solid ${BORDER}` }}>
+                      {item.exchange || 'NSE'}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenStock(item.symbol);
+                      }}
+                      className="v5-body px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: TEAL, color: INK }}
+                    >
+                      View Stock
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="v5-body p-4 text-xs" style={{ color: SUB }}>
+                No market results found for "{searchQuery}".
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="v5-card rounded-2xl px-5 py-4">
           <p className="v5-body text-xs" style={{ color: SUB }}>Current value</p>
@@ -312,64 +374,70 @@ function LongTermSection({ onOpenStock }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {holdings.map((h) => {
-          const spark = linePath(h.spark, 100, 32);
-          const up = h.gainAmount >= 0;
-          return (
-            <motion.div
-              key={h.id}
-              whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.16)' }}
-              onClick={() => onOpenStock(h.symbol)}
-              className="v5-card rounded-xl px-4 py-3 cursor-pointer"
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
-                    style={{ background: `${PURPLE}1A`, color: PURPLE }}
-                  >
-                    {h.symbol.slice(0, 3)}
+        {filteredHoldings.length === 0 ? (
+          <p className="v5-body text-sm py-4" style={{ color: MUTE }}>
+            No long-term holdings match "{searchQuery}".
+          </p>
+        ) : (
+          filteredHoldings.map((h) => {
+            const spark = linePath(h.spark, 100, 32);
+            const up = h.gainAmount >= 0;
+            return (
+              <motion.div
+                key={h.id}
+                whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.16)' }}
+                onClick={() => onOpenStock(h.symbol)}
+                className="v5-card rounded-xl px-4 py-3 cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
+                      style={{ background: `${PURPLE}1A`, color: PURPLE }}
+                    >
+                      {h.symbol.slice(0, 3)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="v5-body text-sm font-medium truncate" style={{ color: TEXT }}>{h.symbol}</p>
+                      <p className="v5-mono text-[10px] mt-0.5" style={{ color: MUTE }}>
+                        {h.qty} qty · held {h.days}d
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="v5-body text-sm font-medium truncate" style={{ color: TEXT }}>{h.symbol}</p>
-                    <p className="v5-mono text-[10px] mt-0.5" style={{ color: MUTE }}>
-                      {h.qty} qty · held {h.days}d
+
+                  <div className="hidden sm:block h-[32px] w-[100px] shrink-0">
+                    <svg viewBox="0 0 100 32" className="w-full h-full" preserveAspectRatio="none">
+                      <path d={spark} fill="none" stroke={up ? TEAL : RED} strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{h.ltp.toFixed(2)}</p>
+                    <p className="v5-mono text-[11px] mt-0.5" style={{ color: up ? TEAL : RED }}>
+                      {up ? '+' : '-'}₹{Math.abs(h.gainAmount).toFixed(0)} ({h.gainPct.toFixed(2)}%)
                     </p>
                   </div>
                 </div>
 
-                <div className="hidden sm:block h-[32px] w-[100px] shrink-0">
-                  <svg viewBox="0 0 100 32" className="w-full h-full" preserveAspectRatio="none">
-                    <path d={spark} fill="none" stroke={up ? TEAL : RED} strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                <div className="flex items-center gap-2 mt-2.5">
+                  <Target size={10} style={{ color: MUTE }} />
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: BORDER }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${h.progressToTarget}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      className="h-full rounded-full"
+                      style={{ background: TEAL }}
+                    />
+                  </div>
+                  <span className="v5-mono text-[10px] shrink-0" style={{ color: MUTE }}>
+                    Target ₹{h.target.toFixed(0)}
+                  </span>
                 </div>
-
-                <div className="text-right shrink-0">
-                  <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{h.ltp.toFixed(2)}</p>
-                  <p className="v5-mono text-[11px] mt-0.5" style={{ color: up ? TEAL : RED }}>
-                    {up ? '+' : '-'}₹{Math.abs(h.gainAmount).toFixed(0)} ({h.gainPct.toFixed(2)}%)
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 mt-2.5">
-                <Target size={10} style={{ color: MUTE }} />
-                <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: BORDER }}>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${h.progressToTarget}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full rounded-full"
-                    style={{ background: TEAL }}
-                  />
-                </div>
-                <span className="v5-mono text-[10px] shrink-0" style={{ color: MUTE }}>
-                  Target ₹{h.target.toFixed(0)}
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
+              </motion.div>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -731,7 +799,18 @@ export default function LiveMarket() {
 
           {tab === 'longterm' && (
             <motion.div key="longterm" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-              <LongTermSection onOpenStock={handleStockClick} />
+              <LongTermSection
+                onOpenStock={handleStockClick}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                isSearching={isSearching}
+                navigate={navigate}
+                token={token}
+                watchedSet={watchedSet}
+                watchlistLoading={watchlistLoading}
+                toggleWatchlist={toggleWatchlist}
+              />
             </motion.div>
           )}
         </AnimatePresence>
