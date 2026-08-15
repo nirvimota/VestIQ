@@ -2,7 +2,8 @@ import supabase from '../config/supabase.js';
 import { validateOrderPayload } from '../validators/orderValidator.js';
 import { checkSufficientFunds } from '../services/riskCheckService.js';
 import { resolveInitialStatus } from '../services/orderMatchingService.js';
-import { getFundsSummary } from '../services/portfolioService.js';
+import { PortfolioService, getFundsSummary } from '../services/portfolioService.js';
+import { getQuote } from '../services/marketDataService.js';
 import { logAction } from '../services/auditLogService.js';
 import { ok, fail } from '../utils/apiResponse.js';
 
@@ -33,6 +34,27 @@ export async function placeOrder(req, res) {
       .single();
 
     if (error) throw error;
+
+    // If it's a market order, auto-execute it and update holdings/positions & funds
+    if (orderType === 'market' && status === 'filled') {
+      try {
+        let execPrice = price;
+        if (!execPrice || execPrice <= 0) {
+          const quote = await getQuote(symbol);
+          execPrice = quote?.price || 1000;
+        }
+
+        const qtyChange = side === 'buy' ? quantity : -quantity;
+        await PortfolioService.updatePositionFromTrade(userId, symbol, qtyChange, execPrice);
+
+        // Deduct/Add funds
+        const cost = quantity * execPrice;
+        const fundDelta = side === 'buy' ? -cost : cost;
+        await PortfolioService.updateFunds(userId, fundDelta, side === 'buy' ? 'trade_buy' : 'trade_sell').catch(() => {});
+      } catch (execErr) {
+        console.error('Failed to update position on market order:', execErr);
+      }
+    }
 
     await logAction(userId, 'ORDER_PLACED', { orderId: data.id, symbol, side, quantity });
 

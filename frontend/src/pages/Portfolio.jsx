@@ -1,9 +1,9 @@
-// C:\nirvi\vestIQ\frontend\src\pages\Portfolio.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
+import { getHoldings } from '../services/portfolioApi';
 
 // ---------------------------------------------------------------------------
 // vestIQ — Portfolio v3
@@ -94,25 +94,90 @@ function fmtINR(n) {
 export default function Portfolio() {
   const [selected, setSelected] = useState(0);
   const [range, setRange] = useState('1W');
+  const [realHoldings, setRealHoldings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchHoldings() {
+      try {
+        const token = localStorage.getItem('vestiq_token') || localStorage.getItem('token');
+        if (!token) {
+          setRealHoldings(HOLDINGS);
+          setLoading(false);
+          return;
+        }
+
+        const data = await getHoldings(token);
+        if (isMounted) {
+          if (data && data.length > 0) {
+            setRealHoldings(data);
+          } else {
+            setRealHoldings([]);
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to fetch real holdings:', err);
+        if (isMounted) {
+          setRealHoldings(HOLDINGS);
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchHoldings();
+    const interval = setInterval(fetchHoldings, 10000); // 10s live refresh
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const displayHoldings = realHoldings.length > 0 ? realHoldings : (loading ? [] : HOLDINGS);
 
   const enriched = useMemo(
     () =>
-      HOLDINGS.map((h) => ({
-        ...h,
-        series: genSeries(h.symbol),
-        pnl: (h.ltp - h.avg) * h.qty,
-        pnlPct: ((h.ltp - h.avg) / h.avg) * 100,
-        value: h.ltp * h.qty,
-      })),
-    []
+      displayHoldings.map((h) => {
+        const avg = h.avg || h.average_price || 1000;
+        const ltp = h.ltp || h.current_price || avg;
+        const qty = h.qty || h.quantity || 1;
+        const up = ltp >= avg;
+        const pnl = (ltp - avg) * qty;
+        const pnlPct = avg ? ((ltp - avg) / avg) * 100 : 0;
+        return {
+          ...h,
+          symbol: h.symbol,
+          name: h.name || h.symbol,
+          qty,
+          avg,
+          ltp,
+          up,
+          series: genSeries(h.symbol),
+          pnl,
+          pnlPct,
+          value: ltp * qty,
+        };
+      }),
+    [displayHoldings]
   );
 
   const totalValue = enriched.reduce((a, h) => a + h.value, 0);
   const totalPnl = enriched.reduce((a, h) => a + h.pnl, 0);
   const totalUp = totalPnl >= 0;
 
-  const active = enriched[selected];
-  const chartData = useMemo(() => genSeries(active.symbol + range, 30), [active.symbol, range]);
+  const active = enriched[selected] || enriched[0] || {
+    symbol: 'N/A',
+    name: 'No Holdings',
+    qty: 0,
+    avg: 0,
+    ltp: 0,
+    up: true,
+    pnl: 0,
+    pnlPct: 0,
+  };
+  const chartData = useMemo(() => genSeries((active.symbol || 'N/A') + range, 30), [active.symbol, range]);
 
   return (
     <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
