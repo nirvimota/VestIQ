@@ -6,6 +6,7 @@ import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
 import { getPortfolioWithLivePrices, getStockHistory, getLiveQuotes } from '../services/portfolioApi';
 import { getWatchlist } from '../services/watchlistApi';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const INK    = '#0A0F1A';
@@ -194,7 +195,8 @@ export default function Portfolio() {
   const [chartData, setChartData]       = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
 
-  const token = localStorage.getItem('vestiq_token') || localStorage.getItem('token');
+  const { session } = useAuth();
+  const token = session?.access_token || null;
   const intervalRef = useRef(null);
   const mountedRef  = useRef(true);
 
