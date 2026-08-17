@@ -19,10 +19,10 @@ export function listOrders(token) {
   return apiFetch('/orders', { token });
 }
 
-export function placeOrder({ symbol, type, side, quantity, price }, token) {
+export function placeOrder({ symbol, type, orderType, side, quantity, price }, token) {
   return apiFetch('/orders', {
     method: 'POST',
-    body: { symbol, type, side, quantity, price },
+    body: { symbol, orderType: orderType || type, side, quantity, price },
     token,
   });
 }

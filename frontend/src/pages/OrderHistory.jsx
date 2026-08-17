@@ -1,7 +1,8 @@
-// C:\nirvi\vestIQ\frontend\src\pages\OrderHistory.jsx
-import { useContext, useMemo, useState } from "react";
+import { useContext, useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TradingContext } from "../context/TradingContext";
+import { useAuth } from "../context/AuthContext";
+import { listOrders } from "../services/orderApi";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
 import { Receipt, Landmark, X, Copy, CreditCard, ShieldCheck } from "lucide-react";
@@ -156,17 +157,46 @@ export default function OrderHistory() {
   const { transactions } = useContext(TradingContext);
   const [tab, setTab] = useState("orders");
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [dbOrders, setDbOrders] = useState([]);
+  const { session } = useAuth();
+  const token = session?.access_token;
 
-  // merge: context transactions first (newest), then mock, de-duped by id
+  useEffect(() => {
+    if (!token) return;
+    listOrders(token)
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setDbOrders(data);
+        }
+      })
+      .catch((err) => console.error("Failed to load backend orders:", err));
+  }, [token]);
+
+  // merge: context transactions first (newest), then dbOrders, then mock, de-duped by compound key
   const allOrders = useMemo(() => {
     const seen = new Set();
-    const merged = [...transactions, ...MOCK_ORDERS].filter((o) => {
-      if (seen.has(o.id)) return false;
-      seen.add(o.id);
+    
+    // Normalize DB orders
+    const normalizedDb = dbOrders.map(o => ({
+      id: o.id,
+      symbol: o.symbol,
+      type: (o.side || 'buy').toUpperCase(),
+      qty: o.quantity || o.qty,
+      price: Number(o.price || 0),
+      timestamp: o.created_at || o.timestamp,
+    }));
+
+    const merged = [...transactions, ...normalizedDb, ...MOCK_ORDERS].filter((o) => {
+      // De-duplicate by symbol, quantity, price, and rough time (minute precision)
+      const dateStr = o.timestamp ? new Date(o.timestamp).toISOString().slice(0, 16) : '';
+      const key = `${o.symbol}_${dateStr}_${o.qty}_${o.price}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
+
     return merged.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [transactions]);
+  }, [transactions, dbOrders]);
 
   const handleTabClick = (key) => {
     if (key === "account") {

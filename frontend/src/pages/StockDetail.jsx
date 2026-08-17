@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getStockQuote, getAIStockAnalysis, getStockHistory } from '../services/stockApi';
 import Sidebar from '../components/layout/Sidebar';
 import AmbientBackground from '../components/layout/AmbientBackground';
+import { useAuth } from '../context/AuthContext';
 import { Sparkles, ArrowLeft, TrendingUp, TrendingDown, RefreshCw, X } from 'lucide-react';
 
 function useIsDesktop(breakpoint = 768) {
@@ -57,10 +58,12 @@ export default function StockDetail() {
     };
   }, [symbol]);
 
+  const { session } = useAuth();
+  const token = session?.access_token;
+
   const handleFetchAI = async () => {
     try {
       setLoadingAi(true);
-      const token = localStorage.getItem('token');
       const analysis = await getAIStockAnalysis(symbol, token);
       setAiAnalysis(analysis);
     } catch (err) {
