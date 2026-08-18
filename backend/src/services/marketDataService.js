@@ -200,11 +200,96 @@ export async function getQuotes(symbols) {
  * @param {string} interval  '1min' | '5min' | '15min' | '1h' | '1day'
  * @param {number} outputsize  number of data points (max 5000 on free tier)
  */
+/**
+ * Maps our interval/outputsize params to Yahoo Finance range+interval combos.
+ */
+function toYahooParams(interval, outputsize) {
+  // interval: '1min'|'5min'|'30min'|'1h'|'1day'|'1week'
+  // Maps to Yahoo Finance interval + range combos
+  if (interval === '1min')  return { yhInterval: '1m',  yhRange: '1d'  };
+  if (interval === '5min')  return { yhInterval: '5m',  yhRange: '5d'  };  // 1W: 5 trading days
+  if (interval === '15min') return { yhInterval: '15m', yhRange: '5d'  };
+  if (interval === '30min') return { yhInterval: '30m', yhRange: '1mo' };  // 1M: ~22 trading days
+  if (interval === '1h')    return { yhInterval: '60m', yhRange: '3mo' };  // 3M: ~65 trading days
+  if (interval === '1week') return { yhInterval: '1wk', yhRange: '1y'  };
+  // default: 1day
+  if (outputsize <= 30)  return { yhInterval: '1d', yhRange: '1mo'  };
+  if (outputsize <= 90)  return { yhInterval: '1d', yhRange: '3mo'  };
+  return                        { yhInterval: '1d', yhRange: '1y'   };  // 1Y: full trading year
+}
+
+/**
+ * Convert a Yahoo Finance UTC unix timestamp to an IST datetime string.
+ * NSE trades in IST (UTC+5:30). Yahoo returns plain UTC unix seconds.
+ * We manually add the IST offset (19800 s = 5h 30m) then read UTC fields
+ * so we get the correct wall-clock time shown on NSE / Groww.
+ *
+ * For daily / weekly bars we show only the date (yyyy-mm-dd).
+ * For intraday bars (≤ 1h) we show date + time (yyyy-mm-dd HH:MM) in IST.
+ */
+function tsToIST(unixSec, isIntraday) {
+  const IST_OFFSET_SEC = 5 * 3600 + 30 * 60; // 19800
+  const d = new Date((unixSec + IST_OFFSET_SEC) * 1000); // shift to IST, read as UTC
+  const yyyy = d.getUTCFullYear();
+  const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getUTCDate()).padStart(2, '0');
+  if (!isIntraday) return `${yyyy}-${mm}-${dd}`;
+  const hh   = String(d.getUTCHours()).padStart(2, '0');
+  const min  = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+}
+
+async function fetchYahooHistory(symbol, interval, outputsize) {
+  const sym = symbol.toUpperCase().split(':')[0].split('.')[0];
+  const { yhInterval, yhRange } = toYahooParams(interval, outputsize);
+  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${sym}.NS?interval=${yhInterval}&range=${yhRange}`;
+
+  const res = await axios.get(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+    timeout: 8000,
+  });
+
+  const result = res.data?.chart?.result?.[0];
+  if (!result) throw new Error('No Yahoo history result');
+
+  // Intraday intervals need HH:MM; daily/weekly just need the date
+  const isIntraday = ['1m', '5m', '15m', '30m', '60m'].includes(yhInterval);
+
+  const timestamps = result.timestamp || [];
+  const closes     = result.indicators?.quote?.[0]?.close || [];
+  const opens      = result.indicators?.quote?.[0]?.open  || [];
+  const highs      = result.indicators?.quote?.[0]?.high  || [];
+  const lows       = result.indicators?.quote?.[0]?.low   || [];
+  const volumes    = result.indicators?.quote?.[0]?.volume || [];
+
+  const series = timestamps.map((ts, i) => ({
+    datetime: tsToIST(ts, isIntraday),
+    open:   opens[i]   != null ? parseFloat(opens[i].toFixed(2))   : null,
+    high:   highs[i]   != null ? parseFloat(highs[i].toFixed(2))   : null,
+    low:    lows[i]    != null ? parseFloat(lows[i].toFixed(2))    : null,
+    close:  closes[i]  != null ? parseFloat(closes[i].toFixed(2))  : null,
+    volume: volumes[i] != null ? parseInt(volumes[i], 10)           : 0,
+  })).filter(v => v.close != null); // strip null candles (market-closed slots)
+
+  if (series.length === 0) throw new Error('Yahoo returned empty series');
+  return series;
+}
+
 export async function getTimeSeries(symbol, interval = '1day', outputsize = 30) {
   const key = `ts:${symbol}:${interval}:${outputsize}`;
   const cached = historyCache.get(key);
   if (cached) return cached;
 
+  // 1. Try Yahoo Finance (primary — always has NSE history)
+  try {
+    const series = await fetchYahooHistory(symbol, interval, outputsize);
+    historyCache.set(key, series);
+    return series;
+  } catch (yhErr) {
+    console.warn(`[MarketData] Yahoo history(${symbol}) failed: ${yhErr.message} — trying Twelve Data`);
+  }
+
+  // 2. Fallback: Twelve Data
   try {
     const sym = symbol.toUpperCase();
     const tdSymbol = sym.includes(':') ? sym : `${sym}:NSE`;

@@ -8,6 +8,9 @@ import { getPortfolioWithLivePrices, getStockHistory, getLiveQuotes } from '../s
 import { getWatchlist } from '../services/watchlistApi';
 import { useAuth } from '../context/AuthContext';
 
+// Cache for sparkline historical data per symbol
+const sparklineCache = {};
+
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const INK    = '#0A0F1A';
 const CARD   = '#111826';
@@ -24,11 +27,11 @@ const POLL_MS    = 15_000;  // live price refresh interval
 const RANGES     = ['1D', '1W', '1M', '3M', '1Y'];
 
 const INTERVAL_MAP = {
-  '1D': { interval: '5min',  outputsize: 78  },
-  '1W': { interval: '1h',    outputsize: 35  },
-  '1M': { interval: '1day',  outputsize: 30  },
-  '3M': { interval: '1day',  outputsize: 90  },
-  '1Y': { interval: '1week', outputsize: 52  },
+  '1D': { interval: '1min',  outputsize: 390 },  // ~375 candles (NSE full day)
+  '1W': { interval: '5min',  outputsize: 390 },  // ~375 candles (5 trading days)
+  '1M': { interval: '30min', outputsize: 390 },  // ~270 candles (22 trading days)
+  '3M': { interval: '1h',    outputsize: 390 },  // ~400 candles (65 trading days)
+  '1Y': { interval: '1day',  outputsize: 390 },  // ~250 candles (trading year)
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,12 +45,18 @@ function seededRandom(seed) {
   return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
 }
 
-function genSyntheticSeries(symbol, points = 24) {
+/**
+ * Generate a synthetic series anchored to the real basePrice so fallback
+ * charts always show the correct price scale for each stock.
+ */
+function genSyntheticSeries(symbol, points = 24, basePrice = 100) {
   const rand = seededRandom(symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0));
-  let v = 100 + rand() * 20;
+  // Volatility scaled to price: ~0.5% per step
+  const vol = Math.max(1, basePrice * 0.005);
+  let v = basePrice * (0.98 + rand() * 0.04); // start near basePrice
   return Array.from({ length: points }, (_, i) => {
-    v += (rand() - 0.48) * 6;
-    return { i, v: Math.max(20, +v.toFixed(2)), datetime: '' };
+    v += (rand() - 0.48) * vol * 2;
+    return { i, v: Math.max(basePrice * 0.8, +v.toFixed(2)), datetime: '' };
   });
 }
 
@@ -165,16 +174,36 @@ function LiveIndicator({ isLive }) {
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function CustomChartTooltip({ active, payload, label, symbol }) {
+function CustomChartTooltip({ active, payload, label, symbol, range }) {
   if (!active || !payload?.length) return null;
-  const v = payload[0]?.value;
+  const v  = payload[0]?.value;
   const dt = payload[0]?.payload?.datetime || '';
+
+  // Format the datetime label nicely:
+  // Intraday: "2026-08-18 15:00" → "15:00 IST, 18 Aug"
+  // Daily:    "2026-08-18"       → "18 Aug 2026"
+  let dtLabel = dt;
+  if (dt) {
+    if (dt.includes(' ')) {
+      // intraday — "yyyy-mm-dd HH:MM"
+      const [datePart, timePart] = dt.split(' ');
+      const [y, m, d] = datePart.split('-');
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      dtLabel = `${timePart} IST, ${d} ${monthNames[parseInt(m,10)-1]}`;
+    } else {
+      // daily — "yyyy-mm-dd"
+      const [y, m, d] = dt.split('-');
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      dtLabel = `${d} ${monthNames[parseInt(m,10)-1]} ${y}`;
+    }
+  }
+
   return (
     <div
       className="v5-mono text-xs px-3 py-2 rounded-lg"
       style={{ background: CARD2, border: `1px solid ${BORDER}`, color: TEXT }}
     >
-      {dt && <p style={{ color: MUTE, marginBottom: 2 }}>{dt}</p>}
+      {dtLabel && <p style={{ color: MUTE, marginBottom: 2 }}>{dtLabel}</p>}
       <p>{symbol}: <span style={{ color: TEXT }}>₹{v != null ? v.toFixed(2) : '-'}</span></p>
     </div>
   );
@@ -194,6 +223,8 @@ export default function Portfolio() {
   const [range, setRange]               = useState('1M');
   const [chartData, setChartData]       = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
+  // sparklineData: { [symbol]: [...pts] } — fetched once per symbol per session
+  const [sparklineData, setSparklineData] = useState({});
 
   const { session } = useAuth();
   const token = session?.access_token || null;
@@ -261,6 +292,35 @@ export default function Portfolio() {
     };
   }, [fetchHoldings, fetchWatchlist]);
 
+  // ── Fetch sparkline history for each holding (1M / 1day interval) ─────────
+  useEffect(() => {
+    if (holdings.length === 0) return;
+    holdings.forEach(async (h) => {
+      const sym = (h.symbol || '').toUpperCase();
+      if (!sym || sparklineData[sym]) return; // already loaded
+      // Check session cache
+      if (sparklineCache[sym]) {
+        setSparklineData(prev => ({ ...prev, [sym]: sparklineCache[sym] }));
+        return;
+      }
+      try {
+        const series = await getStockHistory(sym, '1day', 30);
+        if (Array.isArray(series) && series.length > 1) {
+          const pts = series.map((s, i) => ({
+            i,
+            v: parseFloat(s.close ?? s.v ?? 0),
+            datetime: s.datetime || '',
+          }));
+          sparklineCache[sym] = pts;
+          setSparklineData(prev => ({ ...prev, [sym]: pts }));
+        }
+      } catch {
+        // stay with synthetic
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdings]);
+
   // ── Enrich holdings with computed fields + sparkline ─────────────────────
   const enriched = useMemo(() =>
     holdings.map((h) => {
@@ -270,9 +330,15 @@ export default function Portfolio() {
       const up   = ltp >= avg;
       const pnl  = (ltp - avg) * qty;
       const pnlPct = avg > 0 ? ((ltp - avg) / avg) * 100 : 0;
+      const sym = (h.symbol || 'X').toUpperCase();
+      // Prefer real fetched history; fall back to price-anchored synthetic
+      const realSpark = sparklineData[sym];
+      const series = realSpark && realSpark.length > 1
+        ? realSpark
+        : genSyntheticSeries(sym, 24, ltp || 100);
       return {
         ...h,
-        symbol: (h.symbol || '').toUpperCase(),
+        symbol: sym,
         name: h.name || h.symbol,
         qty,
         avg,
@@ -281,10 +347,10 @@ export default function Portfolio() {
         pnl,
         pnlPct,
         value: ltp * qty,
-        series: genSyntheticSeries(h.symbol || 'X'),
+        series,
       };
     }),
-  [holdings]);
+  [holdings, sparklineData]);
 
   const totalValue  = enriched.reduce((a, h) => a + h.value, 0);
   const totalPnl    = enriched.reduce((a, h) => a + h.pnl, 0);
@@ -312,11 +378,12 @@ export default function Portfolio() {
           }));
           setChartData(pts);
         } else {
-          setChartData(genSyntheticSeries(active.symbol + range, 40));
+          // Anchor fallback to real LTP so chart shows correct price level
+          setChartData(genSyntheticSeries(active.symbol + range, 40, active.ltp || 100));
         }
       })
       .catch(() => {
-        if (!cancelled) setChartData(genSyntheticSeries(active.symbol + range, 40));
+        if (!cancelled) setChartData(genSyntheticSeries(active.symbol + range, 40, active.ltp || 100));
       })
       .finally(() => { if (!cancelled) setChartLoading(false); });
 
@@ -500,7 +567,7 @@ export default function Portfolio() {
                     </div>
 
                     {/* Chart area */}
-                    <div className="h-64 relative">
+                    <div className="h-72 relative">
                       {chartLoading && (
                         <div className="absolute inset-0 rounded-lg chart-shimmer" style={{ zIndex: 2 }} />
                       )}
@@ -513,24 +580,51 @@ export default function Portfolio() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid stroke={BORDER} vertical={false} />
-                          <XAxis dataKey="i" hide />
-                          <YAxis
-                            domain={['dataMin - 4', 'dataMax + 4']}
-                            tick={{ fill: MUTE, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}
+                          <XAxis
+                            dataKey="datetime"
+                            interval={
+                              range === '1D' ? 29          // tick every 30 min (1-min data)
+                              : range === '1W' ? 47        // tick every 4h (5-min data)
+                              : range === '1M' ? 15        // tick every ~2 days (30-min data)
+                              : range === '3M' ? 19        // tick every ~4 days (1h data)
+                              : 24                         // tick every ~month (1-day data)
+                            }
+                            tickFormatter={(dt) => {
+                              if (!dt) return '';
+                              if (dt.includes(' ')) {
+                                // intraday: "2026-08-18 15:00" → "15:00"
+                                return dt.split(' ')[1];
+                              }
+                              // daily: "2026-08-18" → "18 Aug"
+                              const [, m, d] = dt.split('-');
+                              const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              return `${d} ${mon[parseInt(m,10)-1]}`;
+                            }}
+                            tick={{ fill: MUTE, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
                             axisLine={false}
                             tickLine={false}
-                            width={40}
+                          />
+                          <YAxis
+                            domain={[
+                              (dataMin) => parseFloat((dataMin * 0.998).toFixed(2)),
+                              (dataMax) => parseFloat((dataMax * 1.002).toFixed(2)),
+                            ]}
+                            tick={{ fill: MUTE, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}
+                            tickFormatter={(v) => `₹${v >= 1000 ? (v/1000).toFixed(1)+'k' : v.toFixed(0)}`}
+                            axisLine={false}
+                            tickLine={false}
+                            width={52}
                           />
                           <Tooltip content={<CustomChartTooltip symbol={active.symbol} />} />
                           <Area
                             type="monotone"
                             dataKey="v"
                             stroke={active.up ? TEAL : RED}
-                            strokeWidth={2}
+                            strokeWidth={1.5}
                             fill="url(#chartFill)"
                             dot={false}
                             isAnimationActive={!chartLoading}
-                            animationDuration={500}
+                            animationDuration={400}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
