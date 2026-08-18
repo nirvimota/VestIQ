@@ -583,22 +583,29 @@ export default function Portfolio() {
                           <XAxis
                             dataKey="datetime"
                             interval={
-                              range === '1D' ? 29          // tick every 30 min (1-min data)
-                              : range === '1W' ? 47        // tick every 4h (5-min data)
-                              : range === '1M' ? 15        // tick every ~2 days (30-min data)
-                              : range === '3M' ? 19        // tick every ~4 days (1h data)
-                              : 24                         // tick every ~month (1-day data)
+                              range === '1D' ? 29    // every 30 min  (1-min data,  ~375 candles)
+                              : range === '1W' ? 74  // once per day  (5-min data,  ~75 candles/day)
+                              : range === '1M' ? 35  // every 3 days  (30-min data, ~12 candles/day)
+                              : range === '3M' ? 29  // every 5 days  (1h data,     ~6 candles/day)
+                              : 21                   // every month   (1day data,   ~22 candles/month)
                             }
                             tickFormatter={(dt) => {
                               if (!dt) return '';
-                              if (dt.includes(' ')) {
-                                // intraday: "2026-08-18 15:00" → "15:00"
-                                return dt.split(' ')[1];
-                              }
-                              // daily: "2026-08-18" → "18 Aug"
-                              const [, m, d] = dt.split('-');
                               const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                              return `${d} ${mon[parseInt(m,10)-1]}`;
+                              if (dt.includes(' ')) {
+                                // Intraday datetime: "2026-08-18 09:15"
+                                if (range === '1D') {
+                                  // Single day → show time only: "09:15"
+                                  return dt.split(' ')[1];
+                                }
+                                // Multi-day (1W, 1M, 3M) → show date to avoid time loop
+                                const [, m, d] = dt.split(' ')[0].split('-');
+                                return `${parseInt(d,10)} ${mon[parseInt(m,10)-1]}`;
+                              }
+                              // Daily bar: "2026-08-18"
+                              const [y, m, d] = dt.split('-');
+                              if (range === '1Y') return `${mon[parseInt(m,10)-1]} '${y.slice(2)}`;
+                              return `${parseInt(d,10)} ${mon[parseInt(m,10)-1]}`;
                             }}
                             tick={{ fill: MUTE, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
                             axisLine={false}
