@@ -1,0 +1,81 @@
+# ─── Dependencies ────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Environment Variables ───────────────────────────────────────────────────
+# NEVER commit secrets / API keys
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.staging
+
+# ─── Build Outputs ───────────────────────────────────────────────────────────
+# Vite / React
+frontend/dist/
+frontend/.vite/
+frontend/build/
+
+# Backend compiled output (if you ever add a build step)
+backend/dist/
+backend/build/
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Runtime / Cache ─────────────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# ─── Testing ─────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Editor / IDE ────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS Artifacts ────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ─── Supabase / Database ─────────────────────────────────────────────────────
+# Keep .sql schema files — they are documentation
+# But ignore any local dump files
+*.dump
+*.sql.bak
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.pem
+*.p12
+*.key
+*.cert
+.vercel
+.netlify
