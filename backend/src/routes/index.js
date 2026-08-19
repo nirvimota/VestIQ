@@ -8,6 +8,7 @@ import watchlistRoutes from './watchlistRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import newsRoutes from './newsRoutes.js';
+import learnRoutes from './learnRoutes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/watchlist', watchlistRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/ai', aiRoutes);
 router.use('/news', newsRoutes);
+router.use('/learn', learnRoutes);
 
-export default router;
+export default router;
