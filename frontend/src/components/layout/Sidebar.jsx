@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Settings,
   ShoppingBag,
+  Book,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -27,13 +28,15 @@ import { useAuth } from '../../context/AuthContext';
 import { getFormattedUser } from '../../utils/userUtils';
 
 const NAV_ITEMS = [
-  { label: 'Overview', icon: Home, to: '/dashboard' },
+  { label: 'Dashboard', icon: Home, to: '/dashboard' },
   { label: 'Portfolio', icon: LineChartIcon, to: '/portfolio' },
   { label: 'Watchlist', icon: ListChecks, to: '/watchlist' },
   { label: 'Transactions', icon: Send, to: '/orders' },
   { label: 'KYC', icon: ShieldCheck, to: '/kyc' },
   { label: 'Market', icon: ShoppingBag, to: '/market' },
-  { label: 'Alerts', icon: Bell, to: '/alerts' }
+  { label: 'Alerts', icon: Bell, to: '/alerts' },
+  { label: 'Learn', icon: Book, to: '/learn' },
+ 
 ];
 
 
@@ -82,14 +85,6 @@ export default function Sidebar({ user: propUser }) {
       </nav>
 
       <div className="mt-auto flex flex-col gap-1">
-        <Link
-          to="/settings"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-white/[0.04] transition-colors"
-          style={{ color: SUB, fontFamily: "'Inter', sans-serif" }}
-        >
-          <Settings size={16} />
-          Settings
-        </Link>
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 mt-3" style={{ border: `1px solid ${BORDER}` }}>
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"

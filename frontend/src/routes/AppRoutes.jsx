@@ -20,6 +20,8 @@ import NotFound from '../pages/NotFound';
 import LiveMarket from '../pages/market';
 import Intraday from '../pages/intraday';
 import LongTerm from '../pages/Longterm';
+import learn from '../pages/learn';
+import Learn from '../pages/learn';
 
 export default function AppRoutes() {
   const location = useLocation();
@@ -50,6 +52,7 @@ export default function AppRoutes() {
         <Route path="/Market" element={<ProtectedRoute><LiveMarket /></ProtectedRoute>} />
         <Route path="/Intraday" element={<ProtectedRoute><Intraday /></ProtectedRoute>} />
         <Route path="/Long-term" element={<ProtectedRoute><LongTerm /></ProtectedRoute>} />
+        <Route path="/Learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
