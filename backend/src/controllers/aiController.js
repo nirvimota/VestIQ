@@ -3,10 +3,35 @@
  * HTTP handlers for AI-powered endpoints.
  */
 
-import { analyzeStock, marketSummary, answerQuery, portfolioHealthReport } from '../services/aiService.js';
-import { getQuote, getCompanyOverview } from '../services/marketDataService.js';
+import { analyzeStock, marketSummary, answerQuery, portfolioHealthReport, predictStockMovement } from '../services/aiService.js';
+import { getQuote, getCompanyOverview, getTimeSeries } from '../services/marketDataService.js';
 import { getStockNews } from '../services/newsService.js';
 import { ok, fail } from '../utils/apiResponse.js';
+
+/**
+ * GET /api/ai/predict/:symbol
+ * Structured AI price prediction and indicator signals.
+ */
+export async function predictStockHandler(req, res) {
+  const { symbol } = req.params;
+  if (!symbol) return fail(res, 'Symbol is required', 400);
+
+  try {
+    const [quoteRes, historyRes] = await Promise.allSettled([
+      getQuote(symbol),
+      getTimeSeries(symbol, '1day', 30),
+    ]);
+
+    const quote = quoteRes.status === 'fulfilled' ? quoteRes.value : {};
+    const history = historyRes.status === 'fulfilled' ? historyRes.value : [];
+
+    const prediction = await predictStockMovement(symbol.toUpperCase(), quote, history);
+    return ok(res, prediction);
+  } catch (err) {
+    console.error('[AI] predictStockHandler error:', err.message);
+    return fail(res, 'AI prediction unavailable', 500);
+  }
+}
 
 /**
  * GET /api/ai/analyze/:symbol

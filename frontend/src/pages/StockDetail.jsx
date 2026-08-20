@@ -64,8 +64,9 @@ export default function StockDetail() {
   const handleFetchAI = async () => {
     try {
       setLoadingAi(true);
-      const analysis = await getAIStockAnalysis(symbol, token);
-      setAiAnalysis(analysis);
+      const res = await getAIStockAnalysis(symbol, token);
+      const text = typeof res === 'string' ? res : res?.analysis || 'Analysis generation complete.';
+      setAiAnalysis(text);
     } catch (err) {
       setAiAnalysis(`AI Analysis unavailable: ${err.message}`);
     } finally {

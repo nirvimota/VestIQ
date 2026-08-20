@@ -12,6 +12,9 @@ import {
     Search,
     BarChart2,
     Activity,
+    Sparkles,
+    ShieldAlert,
+    Target,
 } from "lucide-react";
 import {
     ResponsiveContainer,
@@ -22,7 +25,7 @@ import {
     Tooltip,
     CartesianGrid,
 } from "recharts";
-import { searchStocks, getStockHistory, getStockQuote } from "../services/stockApi";
+import { searchStocks, getStockHistory, getStockQuote, getAIStockPrediction } from "../services/stockApi";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
 import {
@@ -183,6 +186,8 @@ function StockChartCard({ symbol, onSelectSymbol }) {
     const [loading, setLoading] = useState(false);
     const [quote, setQuote] = useState(null);
     const [error, setError] = useState("");
+    const [prediction, setPrediction] = useState(null);
+    const [loadingPred, setLoadingPred] = useState(false);
 
     const TF_CONFIG = {
         "1D": { interval: "5min", outputsize: 78 },
@@ -190,6 +195,22 @@ function StockChartCard({ symbol, onSelectSymbol }) {
         "1M": { interval: "1day", outputsize: 30 },
         "1Y": { interval: "1day", outputsize: 252 },
     };
+
+    const loadPrediction = useCallback(async () => {
+        if (!symbol) return;
+        setLoadingPred(true);
+        try {
+            const { data: { session } } = await (await import("../services/supabaseClient")).supabase.auth.getSession();
+            const token = session?.access_token;
+            const res = await getAIStockPrediction(symbol, token);
+            setPrediction(res);
+        } catch (err) {
+            console.error("AI prediction error:", err);
+            setPrediction(null);
+        } finally {
+            setLoadingPred(false);
+        }
+    }, [symbol]);
 
     const loadChartAndQuote = useCallback(async () => {
         if (!symbol) return;
@@ -241,6 +262,10 @@ function StockChartCard({ symbol, onSelectSymbol }) {
     useEffect(() => {
         loadChartAndQuote();
     }, [loadChartAndQuote]);
+
+    useEffect(() => {
+        loadPrediction();
+    }, [loadPrediction]);
 
     if (!symbol) {
         return (
@@ -370,6 +395,102 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                     </ResponsiveContainer>
                 </div>
             )}
+
+            {/* AI Prediction & Signal Engine Card */}
+            <div
+                className="rounded-xl p-4 border"
+                style={{
+                    background: "rgba(16,185,129,0.03)",
+                    borderColor: "rgba(16,185,129,0.18)",
+                }}
+            >
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-emerald-400" />
+                        <h4 className="v5-display text-sm font-semibold text-white/90">
+                            xAI Grok Prediction &amp; Signals
+                        </h4>
+                    </div>
+                    {prediction?.sentiment && (
+                        <span
+                            className="v5-mono text-xs px-2.5 py-0.5 rounded-full font-medium"
+                            style={{
+                                background:
+                                    prediction.sentiment === "Bullish"
+                                        ? "rgba(16,185,129,0.15)"
+                                        : prediction.sentiment === "Bearish"
+                                        ? "rgba(244,63,94,0.15)"
+                                        : "rgba(245,158,11,0.15)",
+                                color:
+                                    prediction.sentiment === "Bullish"
+                                        ? EMERALD
+                                        : prediction.sentiment === "Bearish"
+                                        ? ROSE
+                                        : AMBER,
+                            }}
+                        >
+                            {prediction.sentiment} ({prediction.confidence_pct}% Conf.)
+                        </span>
+                    )}
+                </div>
+
+                {loadingPred ? (
+                    <p className="v5-body text-xs text-white/40 animate-pulse">Running AI pattern &amp; technical indicator check...</p>
+                ) : prediction ? (
+                    <div className="space-y-3">
+                        <p className="v5-body text-xs text-white/70 leading-relaxed">
+                            {prediction.timeframe_outlook}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="bg-white/5 p-2.5 rounded-lg border" style={{ borderColor: BORDER }}>
+                                <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
+                                    <Target size={13} />
+                                    <span>1-W Target Price</span>
+                                </div>
+                                <p className="v5-mono text-sm font-bold text-white mt-1">
+                                    {fmtINR(prediction.price_target_1w)}
+                                </p>
+                            </div>
+                            <div className="bg-white/5 p-2.5 rounded-lg border" style={{ borderColor: BORDER }}>
+                                <div className="flex items-center gap-1.5 text-xs text-rose-400 font-mono">
+                                    <ShieldAlert size={13} />
+                                    <span>Stop Loss Limit</span>
+                                </div>
+                                <p className="v5-mono text-sm font-bold text-white mt-1">
+                                    {fmtINR(prediction.stop_loss)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {prediction.signals?.length > 0 && (
+                            <div className="pt-1">
+                                <p className="v5-mono text-[11px] text-white/40 mb-1">Key Technical Drivers:</p>
+                                <ul className="space-y-1">
+                                    {prediction.signals.map((sig, idx) => (
+                                        <li key={idx} className="v5-body text-[11px] text-white/60 flex items-center gap-1.5">
+                                            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                                            {sig}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-between">
+                        <p className="v5-body text-xs text-white/50">
+                            Please sign in or refresh to generate live AI technical predictions.
+                        </p>
+                        <button
+                            onClick={loadPrediction}
+                            className="v5-mono text-xs text-emerald-400 underline hover:text-emerald-300"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -416,7 +537,6 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
         const val = e.target.value;
         setSearchQuery(val);
         setSymbol(val);
-        onSelectSymbol(val.trim().toUpperCase());
         setHighlightIndex(-1);
 
         clearTimeout(debounceTimer.current);

@@ -5,7 +5,7 @@
 
 import { supabase } from "./supabaseClient"; // adjust path if different in your project
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 async function authFetch(path, options = {}) {
   const {
@@ -14,11 +14,7 @@ async function authFetch(path, options = {}) {
 
   const token = session?.access_token;
 
-  // TEMP DEBUG — remove once the 401 is resolved
-  console.log("[paperTradingApi] session:", session);
-  console.log("[paperTradingApi] token present?", Boolean(token));
-
-  const res = await fetch(`${BASE_URL}/api/learn${path}`, {
+  const res = await fetch(`${API_BASE}/learn${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

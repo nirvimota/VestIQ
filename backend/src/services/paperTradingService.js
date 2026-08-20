@@ -240,27 +240,37 @@ export async function getPaperHoldings(userId) {
   if (tErr) throw tErr;
   if (!trades?.length) return [];
 
-  // Aggregate net positions per symbol
+  // Aggregate net positions per symbol using FIFO queue
   const posMap = {};
   for (const t of trades) {
     const sym = t.symbol;
-    if (!posMap[sym]) posMap[sym] = { totalQty: 0, totalCost: 0 };
+    if (!posMap[sym]) posMap[sym] = { lots: [] };
 
     if (t.side === 'buy') {
-      posMap[sym].totalQty  += t.quantity;
-      posMap[sym].totalCost += t.quantity * parseFloat(t.price);
+      posMap[sym].lots.push({ qty: t.quantity, price: parseFloat(t.price) });
     } else {
-      // FIFO-simplified: reduce qty, reduce cost proportionally
-      const avgBefore = posMap[sym].totalQty > 0 ? posMap[sym].totalCost / posMap[sym].totalQty : 0;
-      posMap[sym].totalQty  -= t.quantity;
-      posMap[sym].totalCost -= t.quantity * avgBefore;
+      let qtyToSell = t.quantity;
+      while (qtyToSell > 0 && posMap[sym].lots.length > 0) {
+        const firstLot = posMap[sym].lots[0];
+        if (firstLot.qty <= qtyToSell) {
+          qtyToSell -= firstLot.qty;
+          posMap[sym].lots.shift();
+        } else {
+          firstLot.qty -= qtyToSell;
+          qtyToSell = 0;
+        }
+      }
     }
   }
 
-  // Only keep symbols where we still have shares
+  // Calculate remaining open position totalQty and totalCost
   const openSymbols = Object.entries(posMap)
-    .filter(([, p]) => p.totalQty > 0)
-    .map(([sym, p]) => ({ symbol: sym, totalQty: p.totalQty, totalCost: p.totalCost }));
+    .map(([sym, p]) => {
+      const totalQty = p.lots.reduce((sum, lot) => sum + lot.qty, 0);
+      const totalCost = p.lots.reduce((sum, lot) => sum + lot.qty * lot.price, 0);
+      return { symbol: sym, totalQty, totalCost };
+    })
+    .filter(p => p.totalQty > 0);
 
   if (!openSymbols.length) return [];
 

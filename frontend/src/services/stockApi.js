@@ -44,6 +44,10 @@ export function getAIStockAnalysis(symbol, token) {
   return apiFetch(`/ai/analyze/${symbol}`, { token });
 }
 
+export function getAIStockPrediction(symbol, token) {
+  return apiFetch(`/ai/predict/${symbol}`, { token });
+}
+
 export function askAIChat(question, contextData, token) {
   return apiFetch('/ai/chat', {
     method: 'POST',
