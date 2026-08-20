@@ -10,8 +10,19 @@ import {
     Clock,
     AlertTriangle,
     Search,
+    BarChart2,
+    Activity,
 } from "lucide-react";
-import { searchStocks } from "../services/stockApi";
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid,
+} from "recharts";
+import { searchStocks, getStockHistory, getStockQuote } from "../services/stockApi";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
 import {
@@ -166,9 +177,205 @@ function OrdersTable({ orders }) {
         </div>
     );
 }
+function StockChartCard({ symbol, onSelectSymbol }) {
+    const [timeframe, setTimeframe] = useState("1M");
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [quote, setQuote] = useState(null);
+    const [error, setError] = useState("");
 
-function OrderForm({ onOrderPlaced }) {
-    const [symbol, setSymbol] = useState("");
+    const TF_CONFIG = {
+        "1D": { interval: "5min", outputsize: 78 },
+        "1W": { interval: "15min", outputsize: 100 },
+        "1M": { interval: "1day", outputsize: 30 },
+        "1Y": { interval: "1day", outputsize: 252 },
+    };
+
+    const loadChartAndQuote = useCallback(async () => {
+        if (!symbol) return;
+        setLoading(true);
+        setError("");
+        try {
+            const config = TF_CONFIG[timeframe] || TF_CONFIG["1M"];
+            const [history, liveQuote] = await Promise.all([
+                getStockHistory(symbol, config.interval, config.outputsize),
+                getStockQuote(symbol).catch(() => null),
+            ]);
+
+            setQuote(liveQuote);
+
+            if (Array.isArray(history) && history.length > 0) {
+                const formatted = history.map((item) => {
+                    let displayTime = item.datetime || "";
+                    if (timeframe === "1D") {
+                        displayTime = item.datetime.includes(" ") ? item.datetime.split(" ")[1] : item.datetime;
+                    } else if (timeframe === "1W") {
+                        // e.g. "2026-08-18 09:15" -> "08/18 09:15"
+                        const parts = item.datetime.split(" ");
+                        const dParts = parts[0].split("-");
+                        displayTime = `${dParts[1]}/${dParts[2]}${parts[1] ? " " + parts[1] : ""}`;
+                    } else {
+                        // 1M or 1Y -> "MM/DD"
+                        const parts = item.datetime.split(" ")[0].split("-");
+                        displayTime = parts.length === 3 ? `${parts[1]}/${parts[2]}` : item.datetime;
+                    }
+
+                    return {
+                        time: displayTime,
+                        fullDate: item.datetime,
+                        price: Number(item.close || item.price || 0),
+                    };
+                });
+                setChartData(formatted);
+            } else {
+                setChartData([]);
+            }
+        } catch (err) {
+            console.error("Failed to load chart:", err);
+            setError("Could not load price chart for " + symbol);
+        } finally {
+            setLoading(false);
+        }
+    }, [symbol, timeframe]);
+
+    useEffect(() => {
+        loadChartAndQuote();
+    }, [loadChartAndQuote]);
+
+    if (!symbol) {
+        return (
+            <div className="v5-card rounded-xl p-8 text-center text-white/85">
+                <BarChart2 size={32} className="mx-auto mb-2 opacity-30 text-emerald-400" />
+                <p className="v5-display text-base font-medium text-white/80">Interactive Stock Chart</p>
+                <p className={`v5-body text-xs mt-1 ${TXT_MUTED}`}>
+                    Search and select any stock symbol in the order ticket to analyze live price charts & technical trends.
+                </p>
+            </div>
+        );
+    }
+
+    const firstPrice = chartData[0]?.price || quote?.prev_close || quote?.price || 0;
+    const lastPrice = chartData[chartData.length - 1]?.price || quote?.price || 0;
+    const priceDiff = lastPrice - firstPrice;
+    const pctDiff = firstPrice > 0 ? (priceDiff / firstPrice) * 100 : 0;
+    const isUp = priceDiff >= 0;
+    const strokeColor = isUp ? EMERALD : ROSE;
+    const gradientId = `colorPrice_${symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
+
+    return (
+        <div className="v5-card rounded-xl p-5 space-y-4">
+            {/* Header / Info bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3" style={{ borderColor: BORDER }}>
+                <div>
+                    <div className="flex items-center gap-2">
+                        <h3 className="v5-display text-lg font-bold text-white/90">{symbol}</h3>
+                        {quote?.name && (
+                            <span className="v5-body text-xs text-white/50 truncate max-w-[200px]">
+                                {quote.name}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                        <span className="v5-mono text-xl font-bold text-white">
+                            {fmtINR(quote?.price || lastPrice)}
+                        </span>
+                        <span
+                            className="v5-mono text-xs font-medium flex items-center gap-0.5"
+                            style={{ color: strokeColor }}
+                        >
+                            {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                            {priceDiff >= 0 ? "+" : ""}
+                            {priceDiff.toFixed(2)} ({pctDiff >= 0 ? "+" : ""}
+                            {pctDiff.toFixed(2)}%)
+                        </span>
+                    </div>
+                </div>
+
+                {/* Timeframe Selector */}
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border" style={{ borderColor: BORDER }}>
+                    {Object.keys(TF_CONFIG).map((tf) => (
+                        <button
+                            key={tf}
+                            onClick={() => setTimeframe(tf)}
+                            className="v5-mono text-xs px-2.5 py-1 rounded transition-colors"
+                            style={{
+                                background: timeframe === tf ? "rgba(16,185,129,0.2)" : "transparent",
+                                color: timeframe === tf ? EMERALD : "rgba(255,255,255,0.5)",
+                                fontWeight: timeframe === tf ? 600 : 400,
+                            }}
+                        >
+                            {tf}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Chart Body */}
+            {loading ? (
+                <div className="h-64 flex items-center justify-center">
+                    <Activity size={24} className="animate-spin text-emerald-400 opacity-60" />
+                </div>
+            ) : error ? (
+                <div className="h-64 flex items-center justify-center text-xs text-rose-400">
+                    <AlertTriangle size={14} className="mr-1.5" /> {error}
+                </div>
+            ) : chartData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center text-xs text-white/40">
+                    No historical chart data found for {symbol}
+                </div>
+            ) : (
+                <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={strokeColor} stopOpacity={0.35} />
+                                    <stop offset="95%" stopColor={strokeColor} stopOpacity={0.0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <XAxis
+                                dataKey="time"
+                                stroke="rgba(255,255,255,0.3)"
+                                fontSize={10}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                domain={["auto", "auto"]}
+                                stroke="rgba(255,255,255,0.3)"
+                                fontSize={10}
+                                tickLine={false}
+                                tickFormatter={(val) => `₹${val}`}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    background: "#0e1622",
+                                    borderColor: BORDER,
+                                    borderRadius: "8px",
+                                    fontSize: "12px",
+                                    color: "#fff",
+                                }}
+                                formatter={(val) => [fmtINR(val), "Price"]}
+                                labelFormatter={(label, items) => items[0]?.payload?.fullDate || label}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke={strokeColor}
+                                strokeWidth={2}
+                                fillOpacity={1}
+                                fill={`url(#${gradientId})`}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
+    const [symbol, setSymbol] = useState(selectedSymbol || "");
     const [side, setSide] = useState("buy");
     const [orderType, setOrderType] = useState("market");
     const [quantity, setQuantity] = useState("");
@@ -176,8 +383,16 @@ function OrderForm({ onOrderPlaced }) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
+    // Keep internal input synced if parent updates selectedSymbol
+    useEffect(() => {
+        if (selectedSymbol && selectedSymbol !== symbol) {
+            setSymbol(selectedSymbol);
+            setSearchQuery(selectedSymbol);
+        }
+    }, [selectedSymbol]);
+
     // Stock search autocomplete
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState(selectedSymbol || "");
     const [suggestions, setSuggestions] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [searching, setSearching] = useState(false);
@@ -201,6 +416,7 @@ function OrderForm({ onOrderPlaced }) {
         const val = e.target.value;
         setSearchQuery(val);
         setSymbol(val);
+        onSelectSymbol(val.trim().toUpperCase());
         setHighlightIndex(-1);
 
         clearTimeout(debounceTimer.current);
@@ -228,6 +444,7 @@ function OrderForm({ onOrderPlaced }) {
         const sym = (s.symbol || "").split("/")[0].split(":")[0].trim();
         setSymbol(sym);
         setSearchQuery(sym);
+        onSelectSymbol(sym.toUpperCase());
         setSuggestions([]);
         setShowDropdown(false);
     }
@@ -267,10 +484,6 @@ function OrderForm({ onOrderPlaced }) {
                 quantity: Number(quantity),
                 limitPrice: orderType === "limit" ? Number(limitPrice) : undefined,
             });
-            setSymbol("");
-            setSearchQuery("");
-            setQuantity("");
-            setLimitPrice("");
             onOrderPlaced();
         } catch (err) {
             setError(err.message || "Order failed");
@@ -517,6 +730,7 @@ export default function PaperTrading() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [resetting, setResetting] = useState(false);
+    const [selectedSymbol, setSelectedSymbol] = useState("RELIANCE");
 
     const loadAll = useCallback(async () => {
         try {
@@ -636,6 +850,15 @@ export default function PaperTrading() {
 
                             <div className="grid gap-6 lg:grid-cols-3">
                                 <div className="space-y-6 lg:col-span-2">
+                                    {/* Interactive Live Stock Chart */}
+                                    <section>
+                                        <h2 className="v5-display mb-3 text-base font-semibold">Stock Analysis &amp; Chart</h2>
+                                        <StockChartCard
+                                            symbol={selectedSymbol}
+                                            onSelectSymbol={setSelectedSymbol}
+                                        />
+                                    </section>
+
                                     <section>
                                         <h2 className="v5-display mb-3 text-base font-semibold">Holdings</h2>
                                         <HoldingsTable holdings={holdings} />
@@ -649,7 +872,11 @@ export default function PaperTrading() {
 
                                 <div>
                                     <h2 className="v5-display mb-3 text-base font-semibold">Place Order</h2>
-                                    <OrderForm onOrderPlaced={loadAll} />
+                                    <OrderForm
+                                        selectedSymbol={selectedSymbol}
+                                        onSelectSymbol={setSelectedSymbol}
+                                        onOrderPlaced={loadAll}
+                                    />
                                 </div>
                             </div>
                         </>

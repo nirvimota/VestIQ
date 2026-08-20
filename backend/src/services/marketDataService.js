@@ -205,11 +205,11 @@ export async function getQuotes(symbols) {
  * Maps our interval/outputsize params to Yahoo Finance range+interval combos.
  */
 function toYahooParams(interval, outputsize) {
-  // interval: '1min'|'5min'|'30min'|'1h'|'1day'|'1week'
+  // interval: '1min'|'5min'|'15min'|'30min'|'1h'|'1day'|'1week'
   // Maps to Yahoo Finance interval + range combos
   if (interval === '1min')  return { yhInterval: '1m',  yhRange: '1d'  };
-  if (interval === '5min')  return { yhInterval: '5m',  yhRange: '5d'  };  // 1W: 5 trading days
-  if (interval === '15min') return { yhInterval: '15m', yhRange: '5d'  };
+  if (interval === '5min')  return { yhInterval: '5m',  yhRange: '1d'  };  // 1D: today's trading candles
+  if (interval === '15min') return { yhInterval: '15m', yhRange: '5d'  };  // 1W: 5 trading days
   if (interval === '30min') return { yhInterval: '30m', yhRange: '1mo' };  // 1M: ~22 trading days
   if (interval === '1h')    return { yhInterval: '60m', yhRange: '3mo' };  // 3M: ~65 trading days
   if (interval === '1week') return { yhInterval: '1wk', yhRange: '1y'  };
