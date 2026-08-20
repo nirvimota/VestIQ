@@ -18,6 +18,7 @@ const EXPIRY_DAYS    = 11;              // virtual account lifetime in days
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 function daysRemaining(expiresAt) {
   const diff = new Date(expiresAt) - new Date();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));

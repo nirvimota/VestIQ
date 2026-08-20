@@ -1,56 +1,60 @@
-/**
- * paperTradingApi.js
- * API helpers for the Learn / Paper Trading section.
- * Follows the same pattern as orderApi.js / portfolioApi.js.
- */
+// src/services/paperTradingApi.js
+// Thin fetch wrapper for the /api/learn/* paper trading routes.
+// Attaches the current Supabase session token as a Bearer header,
+// since paperTradingController's requireAuth middleware expects it.
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+import { supabase } from "./supabaseClient"; // adjust path if different in your project
 
-async function apiFetch(path, { method = 'GET', body, token } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
+async function authFetch(path, options = {}) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  // TEMP DEBUG — remove once the 401 is resolved
+  console.log("[paperTradingApi] session:", session);
+  console.log("[paperTradingApi] token present?", Boolean(token));
+
+  const res = await fetch(`${BASE_URL}/api/learn${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
   });
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Paper trading API error');
-  return json.data;
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
+  }
+
+  if (!res.ok) {
+    const message = json?.message || json?.error || `Request failed (${res.status})`;
+    throw Object.assign(new Error(message), { status: res.status });
+  }
+
+  // Support either { success, data } shape from `ok()`, or a bare payload
+  return json?.data !== undefined ? json.data : json;
 }
 
-/** GET /api/learn/account — get or auto-create paper account */
-export function getPaperAccount(token) {
-  return apiFetch('/learn/account', { token });
-}
+export const getPaperAccount = () => authFetch("/account");
 
-/** GET /api/learn/portfolio — full portfolio summary */
-export function getPaperPortfolio(token) {
-  return apiFetch('/learn/portfolio', { token });
-}
+export const getPaperPortfolio = () => authFetch("/portfolio");
 
-/** GET /api/learn/holdings — current open positions */
-export function getPaperHoldings(token) {
-  return apiFetch('/learn/holdings', { token });
-}
+export const getPaperHoldings = () => authFetch("/holdings");
 
-/** GET /api/learn/orders — order history */
-export function getPaperOrders(token) {
-  return apiFetch('/learn/orders', { token });
-}
+export const getPaperOrders = () => authFetch("/orders");
 
-/**
- * POST /api/learn/orders — place a paper order
- * @param {string} token
- * @param {{ symbol: string, side: 'buy'|'sell', orderType?: string, quantity: number, limitPrice?: number }} payload
- */
-export function placePaperOrder(token, payload) {
-  return apiFetch('/learn/orders', { method: 'POST', body: payload, token });
-}
+export const placePaperOrder = ({ symbol, side, orderType, quantity, limitPrice }) =>
+  authFetch("/orders", {
+    method: "POST",
+    body: JSON.stringify({ symbol, side, orderType, quantity, limitPrice }),
+  });
 
-/** POST /api/learn/reset — reset paper account to ₹1,00,000 */
-export function resetPaperAccount(token) {
-  return apiFetch('/learn/reset', { method: 'POST', token });
-}
+export const resetPaperAccount = () => authFetch("/reset", { method: "POST" }); 

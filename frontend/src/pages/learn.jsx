@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { supabase } from "../services/supabaseClient";
+import { useNavigate } from "react-router-dom";
+import { getPaperAccount } from "../services/paperTradingApi";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
 
@@ -208,7 +210,7 @@ function ImpactPill({ impact }) {
   );
 }
 
-function PaperTradingConfirmModal({ onConfirm, onCancel }) {
+function PaperTradingConfirmModal({ onConfirm, onCancel, submitting, errorMsg }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
@@ -238,18 +240,18 @@ function PaperTradingConfirmModal({ onConfirm, onCancel }) {
         <ul className="v5-body mt-4 space-y-2.5 text-sm text-slate-300">
           <li className="flex gap-2">
             <span style={{ color: EMERALD }}>•</span>
-            No real money is involved — every trade uses virtual paper cash.
+            No real money is involved — every trade uses ₹1,00,000 in virtual
+            paper cash and real-time market prices.
           </li>
           <li className="flex gap-2">
             <span style={{ color: EMERALD }}>•</span>
-            Order execution isn't live yet — the paper trading backend is
-            still being built, so this is currently for learning the flow,
-            not placing real-time simulated orders.
+            Your paper account expires 11 days after you start — you can
+            reset it anytime to get a fresh ₹1,00,000 and a new 11-day timer.
           </li>
           <li className="flex gap-2">
             <span style={{ color: EMERALD }}>•</span>
-            Your virtual balance will expire after a limited period once the
-            full paper trading system goes live.
+            Orders here never touch your real funds, portfolio, or broker
+            account — it's a fully separate sandbox.
           </li>
           <li className="flex gap-2">
             <span style={{ color: EMERALD }}>•</span>
@@ -258,9 +260,19 @@ function PaperTradingConfirmModal({ onConfirm, onCancel }) {
           </li>
         </ul>
 
+        {errorMsg && (
+          <p
+            className="v5-body mt-4 flex items-start gap-1.5 text-sm"
+            style={{ color: ROSE }}
+          >
+            {errorMsg}
+          </p>
+        )}
+
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
             onClick={onCancel}
+            disabled={submitting}
             className="rounded-lg px-4 py-2 text-sm text-slate-300"
             style={{ border: `1px solid ${BORDER}` }}
           >
@@ -268,10 +280,11 @@ function PaperTradingConfirmModal({ onConfirm, onCancel }) {
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg px-4 py-2 text-sm font-medium"
+            disabled={submitting}
+            className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
             style={{ background: EMERALD, color: INK }}
           >
-            I understand, sign me up
+            {submitting ? "Setting up..." : "I understand, sign me up"}
           </button>
         </div>
       </div>
@@ -280,21 +293,72 @@ function PaperTradingConfirmModal({ onConfirm, onCancel }) {
 }
 
 function PaperWalletBanner({ onDismiss }) {
-  // In production: read from `paper_wallets` table (virtual_balance, expires_at).
-  // Mocked here as a 14-day grant from today.
-  const daysLeft = 11;
+  const navigate = useNavigate();
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [enrolled, setEnrolled] = useState(
-    () => localStorage.getItem("vestiq_paper_enrolled") === "true"
-  );
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  function handleConfirm() {
-    // TODO: once backend is ready, call the real enroll endpoint instead:
-    // await supabase.from('paper_wallets').insert({ user_id, virtual_balance: 100000, expires_at: ... })
-    localStorage.setItem("vestiq_paper_enrolled", "true");
-    setEnrolled(true);
-    setShowConfirm(false);
+  // The backend auto-creates a paper account on the FIRST call to
+  // getPaperAccount() — that's correct behaviour once the user has
+  // consented, but we must never call it before they click "Start"
+  // (that would silently grant an account with no consent). So we gate
+  // on a local flag: only fetch/create once the user has confirmed here
+  // at least once on this device.
+  useEffect(() => {
+    const hasConfirmed = localStorage.getItem("vestiq_paper_confirmed") === "true";
+
+    if (!hasConfirmed) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    getPaperAccount()
+      .then((acc) => {
+        if (!cancelled) setAccount(acc);
+      })
+      .catch(() => {
+        if (!cancelled) setAccount(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleConfirm() {
+    setSubmitting(true);
+    setErrorMsg("");
+    try {
+      const acc = await getPaperAccount(); // first real call — creates the account
+      localStorage.setItem("vestiq_paper_confirmed", "true");
+      setAccount(acc);
+      setShowConfirm(false);
+    } catch (err) {
+      setErrorMsg(err.message || "Couldn't set up your paper account. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
+
+  if (loading) {
+    return (
+      <div
+        className="v5-card animate-pulse rounded-2xl p-5 sm:p-6"
+        style={{ borderColor: "rgba(16,185,129,0.2)" }}
+      >
+        <div className="h-5 w-56 rounded bg-white/5" />
+        <div className="mt-3 h-4 w-80 rounded bg-white/5" />
+      </div>
+    );
+  }
+
+  const enrolled = Boolean(account) && !account.expired;
 
   return (
     <div
@@ -310,22 +374,62 @@ function PaperWalletBanner({ onDismiss }) {
       </button>
 
       {enrolled ? (
-        <div className="flex items-center gap-3">
-          <div
-            className="rounded-xl p-2.5"
-            style={{ background: "rgba(16,185,129,0.1)", color: EMERALD }}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="rounded-xl p-2.5"
+              style={{ background: "rgba(16,185,129,0.1)", color: EMERALD }}
+            >
+              <CheckCircle2 size={22} />
+            </div>
+            <div>
+              <h3 className="v5-display font-semibold text-slate-50">
+                ₹{Number(account.balance).toLocaleString("en-IN")} paper cash
+                available
+              </h3>
+              <p className="v5-body mt-1 text-sm text-slate-400">
+                Expires in{" "}
+                <span className="v5-mono font-medium" style={{ color: AMBER }}>
+                  {account.days_remaining} days
+                </span>
+                . Place practice orders with live market prices, zero real
+                risk.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate("/paper-trading")}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium"
+            style={{ background: EMERALD, color: INK }}
           >
-            <CheckCircle2 size={22} />
+            Open Paper Trading
+          </button>
+        </div>
+      ) : account?.expired ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className="rounded-xl p-2.5"
+              style={{ background: "rgba(244,63,94,0.1)", color: ROSE }}
+            >
+              <Wallet size={22} />
+            </div>
+            <div>
+              <h3 className="v5-display font-semibold text-slate-50">
+                Your paper trading account expired
+              </h3>
+              <p className="v5-body mt-1 text-sm text-slate-400">
+                Reset it to get a fresh ₹1,00,000 and a new 11-day window.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="v5-display font-semibold text-slate-50">
-              You're signed up for paper trading
-            </h3>
-            <p className="v5-body mt-1 text-sm text-slate-400">
-              Practice orders will unlock here once the paper trading engine
-              is live. We'll notify you.
-            </p>
-          </div>
+          <button
+            onClick={() => navigate("/paper-trading")}
+            className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium"
+            style={{ background: EMERALD, color: INK }}
+          >
+            Reset & Continue
+          </button>
         </div>
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -341,14 +445,16 @@ function PaperWalletBanner({ onDismiss }) {
                 ₹1,00,000 paper cash, ready when you are
               </h3>
               <p className="v5-body mt-1 max-w-md text-sm text-slate-400">
-                Practice real strategies with zero real risk. Your virtual
-                balance will expire in{" "}
-                <span className="v5-mono font-medium" style={{ color: AMBER }}>
-                  {daysLeft} days
-                </span>{" "}
-                once the full system is live — linking a bank account is
-                optional and only needed for real funds later.
+                Practice real strategies with zero real risk, using live
+                market prices. Your virtual balance expires 11 days after you
+                start — linking a bank account is optional and only needed
+                for real funds later.
               </p>
+              {errorMsg && (
+                <p className="v5-body mt-2 text-sm" style={{ color: ROSE }}>
+                  {errorMsg}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 gap-2 sm:flex-col">
@@ -373,6 +479,8 @@ function PaperWalletBanner({ onDismiss }) {
         <PaperTradingConfirmModal
           onConfirm={handleConfirm}
           onCancel={() => setShowConfirm(false)}
+          submitting={submitting}
+          errorMsg={errorMsg}
         />
       )}
     </div>
@@ -584,7 +692,7 @@ export default function Learn() {
   }
 
   return (
-    <div className="v5-root min-h-screen flex relative text-white" style={{ background: INK }}>
+    <div className="v5-root min-h-screen flex relative text-white/85" style={{ background: INK }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
         .v5-display { font-family: 'Space Grotesk', sans-serif; }
