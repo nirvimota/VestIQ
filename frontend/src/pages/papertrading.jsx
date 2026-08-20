@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Wallet,
     RefreshCw,
@@ -9,7 +9,9 @@ import {
     ArrowDownRight,
     Clock,
     AlertTriangle,
+    Search,
 } from "lucide-react";
+import { searchStocks } from "../services/stockApi";
 import Sidebar from "../components/layout/Sidebar";
 import AmbientBackground from "../components/layout/AmbientBackground";
 import {
@@ -174,6 +176,78 @@ function OrderForm({ onOrderPlaced }) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
+    // Stock search autocomplete
+    const [searchQuery, setSearchQuery] = useState("");
+    const [suggestions, setSuggestions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [highlightIndex, setHighlightIndex] = useState(-1);
+    const debounceTimer = useRef(null);
+    const wrapperRef = useRef(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Debounced search
+    function handleSymbolInput(e) {
+        const val = e.target.value;
+        setSearchQuery(val);
+        setSymbol(val);
+        setHighlightIndex(-1);
+
+        clearTimeout(debounceTimer.current);
+        if (val.trim().length < 2) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
+        debounceTimer.current = setTimeout(async () => {
+            setSearching(true);
+            try {
+                const results = await searchStocks(val.trim());
+                setSuggestions(results || []);
+                setShowDropdown(true);
+            } catch {
+                setSuggestions([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 300);
+    }
+
+    function pickSuggestion(s) {
+        // Strip exchange suffix like /NSE if present
+        const sym = (s.symbol || "").split("/")[0].split(":")[0].trim();
+        setSymbol(sym);
+        setSearchQuery(sym);
+        setSuggestions([]);
+        setShowDropdown(false);
+    }
+
+    function handleKeyDown(e) {
+        if (!showDropdown || !suggestions.length) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setHighlightIndex((i) => Math.min(i + 1, suggestions.length - 1));
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setHighlightIndex((i) => Math.max(i - 1, 0));
+        } else if (e.key === "Enter" && highlightIndex >= 0) {
+            e.preventDefault();
+            pickSuggestion(suggestions[highlightIndex]);
+        } else if (e.key === "Escape") {
+            setShowDropdown(false);
+        }
+    }
+
     async function handleSubmit(e) {
         e.preventDefault();
         setError("");
@@ -194,6 +268,7 @@ function OrderForm({ onOrderPlaced }) {
                 limitPrice: orderType === "limit" ? Number(limitPrice) : undefined,
             });
             setSymbol("");
+            setSearchQuery("");
             setQuantity("");
             setLimitPrice("");
             onOrderPlaced();
@@ -226,15 +301,137 @@ function OrderForm({ onOrderPlaced }) {
                 ))}
             </div>
 
-            <div>
+            {/* Symbol search with autocomplete */}
+            <div ref={wrapperRef} style={{ position: "relative" }}>
                 <label className={`v5-mono mb-1 block text-xs ${TXT_MUTED}`}>Symbol</label>
-                <input
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    placeholder="e.g. RELIANCE"
-                    className={inputClasses}
-                    style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}` }}
-                />
+                <div style={{ position: "relative" }}>
+                    <Search
+                        size={14}
+                        style={{
+                            position: "absolute",
+                            left: "10px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            color: "rgba(255,255,255,0.3)",
+                            pointerEvents: "none",
+                        }}
+                    />
+                    <input
+                        value={searchQuery}
+                        onChange={handleSymbolInput}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+                        placeholder="Search stock, e.g. RELIANCE"
+                        autoComplete="off"
+                        className={inputClasses}
+                        style={{
+                            background: "rgba(255,255,255,0.03)",
+                            border: `1px solid ${showDropdown ? "rgba(16,185,129,0.4)" : BORDER}`,
+                            paddingLeft: "30px",
+                            transition: "border-color 0.2s",
+                        }}
+                    />
+                    {searching && (
+                        <span
+                            style={{
+                                position: "absolute",
+                                right: "10px",
+                                top: "50%",
+                                transform: "translateY(-50%)",
+                                fontSize: "10px",
+                                color: "rgba(255,255,255,0.35)",
+                            }}
+                        >
+                            ...
+                        </span>
+                    )}
+                </div>
+
+                {/* Dropdown */}
+                {showDropdown && suggestions.length > 0 && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 50,
+                            background: "#0e1622",
+                            border: `1px solid rgba(16,185,129,0.25)`,
+                            borderRadius: "10px",
+                            marginTop: "4px",
+                            overflow: "hidden",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        {suggestions.map((s, i) => (
+                            <div
+                                key={s.symbol}
+                                onMouseDown={() => pickSuggestion(s)}
+                                style={{
+                                    padding: "9px 12px",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    borderBottom:
+                                        i < suggestions.length - 1
+                                            ? `1px solid rgba(255,255,255,0.05)`
+                                            : "none",
+                                    background:
+                                        i === highlightIndex
+                                            ? "rgba(16,185,129,0.1)"
+                                            : "transparent",
+                                    transition: "background 0.15s",
+                                }}
+                                onMouseEnter={() => setHighlightIndex(i)}
+                                onMouseLeave={() => setHighlightIndex(-1)}
+                            >
+                                <span
+                                    className="v5-mono"
+                                    style={{ fontSize: "13px", color: "rgba(255,255,255,0.9)", fontWeight: 500 }}
+                                >
+                                    {(s.symbol || "").split("/")[0].split(":")[0]}
+                                </span>
+                                <span
+                                    className="v5-body"
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "rgba(255,255,255,0.4)",
+                                        maxWidth: "55%",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        textAlign: "right",
+                                    }}
+                                >
+                                    {s.name}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {showDropdown && !searching && suggestions.length === 0 && searchQuery.length >= 2 && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 50,
+                            background: "#0e1622",
+                            border: `1px solid ${BORDER}`,
+                            borderRadius: "10px",
+                            marginTop: "4px",
+                            padding: "10px 12px",
+                            fontSize: "12px",
+                            color: "rgba(255,255,255,0.35)",
+                        }}
+                    >
+                        No results for "{searchQuery}"
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
