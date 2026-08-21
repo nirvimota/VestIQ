@@ -1,4 +1,5 @@
 import supabase from '../config/supabase.js';
+import { ORDER_STATUS } from '../utils/constants.js';
 
 /**
  * Order model - represents a buy/sell order
@@ -181,11 +182,11 @@ export class Order {
     const order = await this.findById(orderId);
     if (!order) throw new Error(`Order ${orderId} not found`);
 
-    let newStatus = 'partially_filled';
+    let newStatus = ORDER_STATUS.PARTIAL;
     if (filledQuantity >= order.quantity) {
-      newStatus = 'filled';
+      newStatus = ORDER_STATUS.FILLED;
     } else if (filledQuantity > 0) {
-      newStatus = 'partially_filled';
+      newStatus = ORDER_STATUS.PARTIAL;
     }
 
     const { data, error } = await supabase
