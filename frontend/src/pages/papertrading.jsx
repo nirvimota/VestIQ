@@ -905,7 +905,7 @@ export default function PaperTrading() {
             <Sidebar />
 
             <main className="flex-1 min-w-0 relative">
-                <div className="max-w-6xl mx-auto px-6 lg:px-10 py-7 space-y-8">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-7 pb-24 lg:pb-7 space-y-8">
                     {/* Header */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -917,7 +917,7 @@ export default function PaperTrading() {
                                 Practice sandbox
                             </h1>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                             {account && !loading && (
                                 <span
                                     className="v5-mono flex items-center gap-1.5 text-xs"

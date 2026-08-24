@@ -81,20 +81,20 @@ export default function FundsIPO() {
       <Sidebar />
 
       <div className="flex-1 min-w-0 relative">
-        <div className="max-w-5xl mx-auto px-5 py-8 pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5 py-6 lg:py-8 pb-24">
           {/* Header */}
-          <div className="flex items-end justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <p className="text-zinc-500 text-xs font-mono tracking-wide uppercase mb-1">Funds &amp IPO</p>
+              <p className="text-zinc-500 text-xs font-mono tracking-wide uppercase mb-1">Funds &amp; IPO</p>
               <h1 className="text-2xl font-semibold tracking-tight">₹{fmtINR(FUNDS.available)}</h1>
               <p className="text-zinc-500 text-[11px] font-mono mt-1">Available balance</p>
             </div>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 text-xs font-mono px-3.5 py-2 rounded-lg bg-emerald-400 text-zinc-950 font-medium hover:bg-emerald-300 transition-colors">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button className="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 text-xs font-mono px-3.5 py-2 rounded-lg bg-emerald-400 text-zinc-950 font-medium hover:bg-emerald-300 transition-colors">
                 <ArrowDownRight size={14} />
                 Add funds
               </button>
-              <button className="flex items-center gap-1.5 text-xs font-mono px-3.5 py-2 rounded-lg border border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100 transition-colors">
+              <button className="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 text-xs font-mono px-3.5 py-2 rounded-lg border border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100 transition-colors">
                 <ArrowUpRight size={14} />
                 Withdraw
               </button>
@@ -102,7 +102,7 @@ export default function FundsIPO() {
           </div>
 
           {/* Funds summary strip */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Wallet size={13} className="text-zinc-500" />
@@ -121,7 +121,7 @@ export default function FundsIPO() {
           </div>
 
           {/* IPO section */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <p className="font-mono text-xs text-zinc-500 uppercase tracking-wide">IPOs</p>
             <div className="relative flex gap-1 bg-zinc-900/60 border border-zinc-800 rounded-lg p-1">
               {TABS.map((t) => (
@@ -154,7 +154,7 @@ export default function FundsIPO() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.18, delay: i * 0.03 }}
-                  className="flex items-center justify-between gap-4 px-4 py-4"
+                  className="flex flex-col sm:flex-row sm:items-start sm:items-center justify-between gap-3 sm:gap-4 px-4 py-4"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function FundsIPO() {
                     </p>
                   </div>
 
-                  <div className="text-right shrink-0 flex items-center gap-4">
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0 shrink-0">
                     {ipo.subscribed !== null && (
                       <div>
                         <p className="text-zinc-500 text-[10px] font-mono uppercase">Subscribed</p>

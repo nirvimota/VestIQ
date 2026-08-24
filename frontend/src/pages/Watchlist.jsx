@@ -124,7 +124,7 @@ export default function Watchlist() {
       <AmbientBackground opacity={0.12} />
       <Sidebar />
 
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-8 pb-20">
+      <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 py-6 lg:py-8 pb-24 lg:pb-20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -199,7 +199,7 @@ export default function Watchlist() {
                     >
                       <div>
                         <p className="font-mono text-sm font-bold text-[#2ED9B8]">{s.symbol}</p>
-                        <p className="text-xs text-[#8A93A6] truncate max-w-[220px]">{s.name}</p>
+                        <p className="text-xs text-[#8A93A6] truncate max-w-[130px] sm:max-w-[220px]">{s.name}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-[#4E5A70] font-mono px-2 py-0.5 bg-[#0A0F1A] rounded border border-[#1E2838]">
@@ -273,26 +273,26 @@ export default function Watchlist() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between bg-[#111826] border border-[#1E2838] rounded-2xl px-5 py-4 hover:border-[#2ED9B8]/30 transition-colors"
+                    className="flex items-center justify-between bg-[#111826] border border-[#1E2838] rounded-2xl px-3 py-3 sm:px-5 sm:py-4 hover:border-[#2ED9B8]/30 transition-colors"
                   >
                     {/* Symbol + name */}
                     <div
                       onClick={() => navigate(`/stock/${s.symbol}`)}
-                      className="flex-1 cursor-pointer flex items-center gap-4"
+                      className="flex-1 cursor-pointer flex items-center gap-2 sm:gap-4"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-[#0A0F1A] border border-[#1E2838] flex items-center justify-center font-mono text-xs font-bold text-[#2ED9B8]">
+                      <div className="hidden sm:flex w-10 h-10 rounded-xl bg-[#0A0F1A] border border-[#1E2838] items-center justify-center font-mono text-xs font-bold text-[#2ED9B8]">
                         {s.symbol.substring(0, 3)}
                       </div>
                       <div>
                         <p className="font-mono text-sm font-bold text-[#ECEEF0] hover:text-[#2ED9B8] transition-colors">
                           {s.symbol}
                         </p>
-                        <p className="text-[#8A93A6] text-xs truncate">{s.name || s.symbol}</p>
+                        <p className="text-[#8A93A6] text-xs truncate max-w-[120px] sm:max-w-[200px]">{s.name || s.symbol}</p>
                       </div>
                     </div>
 
                     {/* Price + change */}
-                    <div className="text-right mr-4">
+                    <div className="text-right mr-2 sm:mr-4">
                       {s._loading ? (
                         <div className="animate-pulse space-y-1">
                           <div className="h-3 w-20 rounded bg-[#1E2838]" />
@@ -315,7 +315,7 @@ export default function Watchlist() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/order/${s.symbol}?side=buy`}
-                        className="px-4 py-1.5 rounded-full bg-[#2ED9B8] text-[#0A0F1A] text-xs font-semibold hover:opacity-90 transition-opacity"
+                        className="px-3 py-1.5 sm:px-4 rounded-full bg-[#2ED9B8] text-[#0A0F1A] text-xs font-semibold hover:opacity-90 transition-opacity"
                       >
                         Buy
                       </Link>

@@ -428,16 +428,16 @@ export default function Portfolio() {
       <Sidebar />
 
       <div className="flex-1 min-w-0 relative">
-        <div className="max-w-5xl mx-auto px-5 py-8 pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5 py-6 lg:py-8 pb-24">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
-          <div className="flex items-end justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between items-start gap-4 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <p className="v5-mono text-xs tracking-wide uppercase" style={{ color: MUTE }}>My Portfolio</p>
                 <LiveIndicator isLive={isLive} />
               </div>
-              <h1 className="v5-display text-3xl font-bold" style={{ color: TEXT }}>
+              <h1 className="v5-display text-2xl sm:text-3xl font-bold" style={{ color: TEXT }}>
                 ₹{fmtINR(totalValue)}
               </h1>
               {lastUpdated && (
@@ -446,9 +446,9 @@ export default function Portfolio() {
                 </p>
               )}
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="v5-mono text-xs uppercase mb-1" style={{ color: MUTE }}>Total P&amp;L</p>
-              <p className="v5-mono text-xl font-medium" style={{ color: totalUp ? TEAL : RED }}>
+              <p className="v5-mono text-lg sm:text-xl font-medium" style={{ color: totalUp ? TEAL : RED }}>
                 {totalUp ? '+' : ''}₹{fmtINR(Math.abs(totalPnl))}
               </p>
               <p className="v5-mono text-xs mt-0.5" style={{ color: totalUp ? TEAL : RED }}>
@@ -638,7 +638,7 @@ export default function Portfolio() {
                     </div>
 
                     {/* Stats row */}
-                    <div className="grid grid-cols-4 gap-3 mt-5 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
                       <div>
                         <p className="v5-mono text-[10px] uppercase" style={{ color: MUTE }}>Avg. Price</p>
                         <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>₹{fmtINR(active.avg)}</p>

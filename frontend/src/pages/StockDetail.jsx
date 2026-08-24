@@ -148,7 +148,7 @@ export default function StockDetail() {
 
           {/* AI Insights Section */}
           <div className="bg-[#111826] border border-[#1E2838] rounded-2xl p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles size={18} className="text-[#2ED9B8]" />
                 <h3 className="font-display text-base font-semibold text-[#ECEEF0]">
@@ -230,7 +230,7 @@ export default function StockDetail() {
     <div className="min-h-screen flex bg-[#0A0F1A] text-[#ECEEF0]">
       <AmbientBackground opacity={0.12} />
       <Sidebar />
-      <main className="flex-1 max-w-5xl mx-auto px-6 py-8 pb-24">
+      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-6 lg:py-8 pb-24">
         {content}
       </main>
     </div>

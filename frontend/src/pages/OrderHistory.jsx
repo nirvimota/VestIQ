@@ -223,7 +223,7 @@ export default function OrderHistory() {
 
       {/* Main */}
       <main className="flex-1 min-w-0 relative">
-        <div className="max-w-3xl mx-auto px-6 lg:px-10 py-7">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-7 pb-24 lg:pb-7">
           <h1 className="v5-display text-xl" style={{ color: TEXT }}>Order History</h1>
 
           {/* Pill tab switch — Orders / Account Details */}

@@ -122,8 +122,8 @@ export default function Intraday() {
       <Sidebar />
 
       <main className="flex-1 min-w-0 relative">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 py-7">
-          <div className="flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-7 pb-24 lg:pb-7">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
             <h1 className="v5-display text-xl" style={{ color: TEXT }}>Intraday Trading</h1>
             <div className="v5-card rounded-full px-3 py-1.5 flex items-center gap-2" style={{ color: SUB }}>
               <Clock size={13} style={{ color: TEAL }} />
@@ -199,8 +199,8 @@ export default function Intraday() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 md:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <motion.div whileHover={cardHover} transition={cardTransition} className="v5-card rounded-2xl px-5 py-5 sm:col-span-2">
               <p className="v5-body text-sm" style={{ color: SUB }}>Today's P&amp;L</p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="v5-display text-3xl" style={{ color: totalPnl >= 0 ? TEAL : RED }}>
@@ -270,7 +270,7 @@ export default function Intraday() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center v5-mono text-[10px] font-bold shrink-0"
+                        className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center v5-mono text-[10px] font-bold shrink-0"
                         style={{ background: p.type === "BUY" ? `${TEAL}1A` : `${RED}1A`, color: p.type === "BUY" ? TEAL : RED }}
                       >
                         {p.symbol.slice(0, 3)}
@@ -298,7 +298,7 @@ export default function Intraday() {
 
                     <button
                       onClick={(e) => e.stopPropagation()}
-                      className="v5-exit-btn v5-body text-[11px] flex items-center gap-1 px-3 py-1.5 rounded-full shrink-0"
+                      className="v5-exit-btn v5-body text-[10px] sm:text-[11px] flex items-center gap-1 px-2.5 py-1.5 rounded-full shrink-0"
                       style={{ color: RED, border: `1px solid ${RED}40` }}
                     >
                       <X size={11} /> Exit

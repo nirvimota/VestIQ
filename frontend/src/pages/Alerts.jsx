@@ -240,7 +240,7 @@ export default function Alerts() {
         <motion.button
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.92 }}
-          className="fixed bottom-8 right-6 w-14 h-14 rounded-full bg-gold text-ink flex items-center justify-center shadow-lg shadow-black/40"
+          className="fixed bottom-20 lg:bottom-8 right-6 w-14 h-14 rounded-full bg-gold text-ink flex items-center justify-center shadow-lg shadow-black/40 z-30"
           aria-label="Create alert"
         >
           <Plus size={22} />

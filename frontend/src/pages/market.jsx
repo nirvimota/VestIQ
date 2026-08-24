@@ -215,7 +215,7 @@ function IntradaySection({ onOpenStock, searchQuery, setSearchQuery, searchResul
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
+                    className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center v5-mono text-[9px] font-bold shrink-0"
                     style={{ background: p.type === 'BUY' ? `${TEAL}1A` : `${RED}1A`, color: p.type === 'BUY' ? TEAL : RED }}
                   >
                     {p.symbol.slice(0, 3)}
@@ -243,7 +243,7 @@ function IntradaySection({ onOpenStock, searchQuery, setSearchQuery, searchResul
 
                 <button
                   onClick={(e) => e.stopPropagation()}
-                  className="v5-body text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-full shrink-0"
+                  className="v5-body text-[10px] sm:text-[11px] flex items-center gap-1 px-2 py-1 sm:px-2.5 rounded-full shrink-0"
                   style={{ color: RED, border: `1px solid ${RED}40` }}
                 >
                   <X size={10} /> Exit
@@ -392,7 +392,7 @@ function LongTermSection({ onOpenStock, searchQuery, setSearchQuery, searchResul
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[9px] font-bold shrink-0"
+                      className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center v5-mono text-[9px] font-bold shrink-0"
                       style={{ background: `${PURPLE}1A`, color: PURPLE }}
                     >
                       {h.symbol.slice(0, 3)}
@@ -591,7 +591,7 @@ export default function LiveMarket() {
       <AmbientBackground opacity={0.12} />
       <Sidebar />
 
-      <main className="flex-1 max-w-4xl mx-auto px-6 py-8 pb-20 relative">
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 py-6 lg:py-8 pb-24 lg:pb-20 relative">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <h1 className="v5-display text-2xl" style={{ color: TEXT }}>Live Market</h1>
@@ -604,7 +604,7 @@ export default function LiveMarket() {
         </p>
 
         {/* Pill tab switch — Overview / Intraday / Long-term, all inside /Market */}
-        <div className="relative flex items-center gap-1 v5-card rounded-full p-1 w-fit mb-6 ">
+        <div className="relative flex items-center overflow-x-auto scrollbar-none flex-nowrap max-w-full gap-1 v5-card rounded-full p-1 w-fit mb-6 ">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.key;
@@ -612,7 +612,7 @@ export default function LiveMarket() {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className="v5-body relative text-xs px-4 py-2 rounded-full flex items-center gap-1.5"
+                className="v5-body relative text-xs px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0"
                 style={{ color: active ? INK : SUB }}
               >
                 {active && (
@@ -710,18 +710,18 @@ export default function LiveMarket() {
                     const toggling = watchlistLoading.has(s.symbol);
 
                     return (
-                      <div key={s.symbol} className="v5-card rounded-2xl px-5 py-4 flex items-center justify-between">
-                        <div onClick={() => handleStockClick(s.symbol)} className="flex-1 cursor-pointer flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center v5-mono text-xs font-bold" style={{ background: INK, border: `1px solid ${BORDER}`, color: TEAL }}>
+                      <div key={s.symbol} className="v5-card rounded-2xl px-3 py-3 sm:px-5 sm:py-4 flex items-center justify-between">
+                        <div onClick={() => handleStockClick(s.symbol)} className="flex-1 cursor-pointer flex items-center gap-2 sm:gap-4 min-w-0">
+                          <div className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center v5-mono text-xs font-bold shrink-0" style={{ background: INK, border: `1px solid ${BORDER}`, color: TEAL }}>
                             {s.symbol.substring(0, 3)}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="v5-mono text-sm font-bold" style={{ color: TEXT }}>{s.symbol}</p>
-                            <p className="v5-body text-xs truncate" style={{ color: SUB }}>{s.name}</p>
+                            <p className="v5-body text-xs truncate max-w-[100px] sm:max-w-none" style={{ color: SUB }}>{s.name}</p>
                           </div>
                         </div>
 
-                        <div className="text-right mr-4 cursor-pointer" onClick={() => handleStockClick(s.symbol)}>
+                        <div className="text-right mr-2 sm:mr-4 cursor-pointer shrink-0" onClick={() => handleStockClick(s.symbol)}>
                           {s._loading ? (
                             <div className="animate-pulse space-y-1">
                               <div className="h-3 w-20 rounded" style={{ background: BORDER }} />
@@ -740,26 +740,26 @@ export default function LiveMarket() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                           {token && (
                             <button
                               onClick={(e) => toggleWatchlist(s.symbol, e)}
                               disabled={toggling}
                               title={watched ? 'Remove from watchlist' : 'Add to watchlist'}
-                              className="p-2 rounded-xl transition-all"
+                              className="p-1.5 sm:p-2 rounded-xl transition-all"
                               style={
                                 watched
                                   ? { background: `${TEAL}33`, color: TEAL, border: `1px solid ${TEAL}66` }
                                   : { background: BORDER, color: SUB, border: '1px solid transparent' }
                               }
                             >
-                              {toggling ? <Loader2 size={14} className="animate-spin" /> : watched ? <Check size={14} /> : <Plus size={14} />}
+                              {toggling ? <Loader2 size={13} className="animate-spin" /> : watched ? <Check size={13} /> : <Plus size={13} />}
                             </button>
                           )}
 
                           <button
                             onClick={() => handleStockClick(s.symbol)}
-                            className="v5-body px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1 transition-colors"
+                            className="hidden sm:flex v5-body px-3.5 py-1.5 rounded-full text-xs items-center gap-1 transition-colors"
                             style={{ background: BORDER, color: TEXT }}
                           >
                             <Sparkles size={13} /> AI
@@ -767,7 +767,7 @@ export default function LiveMarket() {
 
                           <button
                             onClick={() => navigate(`/order/${s.symbol}?side=buy`)}
-                            className="v5-body px-4 py-1.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-90"
+                            className="v5-body px-3 py-1.5 sm:px-4 rounded-full text-xs font-semibold transition-opacity hover:opacity-90"
                             style={{ background: TEAL, color: INK }}
                           >
                             Buy

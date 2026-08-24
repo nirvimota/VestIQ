@@ -289,7 +289,7 @@ export default function OrderTicket() {
       <Sidebar />
 
       <div className="flex-1 min-w-0 relative">
-        <div className="max-w-xl mx-auto px-5 py-8 pb-24">
+        <div className="max-w-xl mx-auto px-4 sm:px-5 py-6 lg:py-8 pb-28 lg:pb-24">
           {/* Back button */}
           <button
             onClick={() => navigate(-1)}

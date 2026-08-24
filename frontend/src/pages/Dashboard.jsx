@@ -183,7 +183,7 @@ export default function Dashboard() {
       <Sidebar />
 
       <main className="flex-1 min-w-0 relative">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-7">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-7 pb-24 lg:pb-7">
           {/* top bar */}
           <div className="flex items-center justify-between">
             <h1 className="v5-display text-xl" style={{ color: TEXT }}>Dashboard</h1>
@@ -194,11 +194,11 @@ export default function Dashboard() {
               <button className="v5-card v5-icon-btn w-9 h-9 rounded-full flex items-center justify-center" style={{ color: SUB }}>
                 <Bell size={15} />
               </button>
-              <div className="flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center v5-mono text-[11px] font-bold" style={{ background: TEAL, color: INK }}>
                   {currentUser.initials}
                 </div>
-                <div className="hidden sm:block">
+                <div>
                   <p className="v5-body text-xs" style={{ color: TEXT }}>{currentUser.name}</p>
                   <p className="v5-body text-[10px]" style={{ color: MUTE }}>{currentUser.role || 'Investor'}</p>
                 </div>

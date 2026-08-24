@@ -152,7 +152,7 @@ export default function Kyc() {
       <AmbientBackground opacity={0.12} />
       <Sidebar />
 
-      <div className="flex-1 min-w-0 relative px-4 sm:px-6 py-10">
+      <div className="flex-1 min-w-0 relative px-4 sm:px-6 py-6 lg:py-10 pb-24 lg:pb-10">
         <div className="relative z-10 max-w-2xl mx-auto">
           <div className="text-center mb-6">
             <h1 className="v5-display text-2xl sm:text-3xl" style={{ color: TEXT }}>Complete your KYC</h1>
@@ -183,11 +183,11 @@ export default function Kyc() {
                     onClick={() => i < step && setStep(i)}
                     whileHover={i < step ? { scale: 1.08 } : {}}
                     whileTap={i < step ? { scale: 0.94 } : {}}
-                    className="flex flex-col items-center gap-1.5"
+                    className="flex flex-col items-center gap-1.5 shrink-0"
                     style={{ cursor: i < step ? 'pointer' : 'default' }}
                   >
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors"
+                      className="w-9 h-9 rounded-full flex items-center justify-center border transition-colors shrink-0"
                       style={{
                         background: done ? TEAL : activeStep ? BLUE : 'transparent',
                         borderColor: done ? TEAL : activeStep ? BLUE : BORDER,
@@ -201,7 +201,7 @@ export default function Kyc() {
                     </span>
                   </motion.button>
                   {i < STEPS.length - 1 && (
-                    <div className="flex-1 h-px mx-1 relative overflow-hidden" style={{ background: BORDER }}>
+                    <div className="flex-1 min-w-[8px] h-px mx-1 relative overflow-hidden" style={{ background: BORDER }}>
                       <motion.div
                         animate={{ width: i < step ? '100%' : '0%' }}
                         transition={{ duration: 0.3 }}
@@ -231,7 +231,7 @@ export default function Kyc() {
                     <Field label="Full name (as per PAN)">
                       <input className="v5-input" value={form.fullName} onChange={set('fullName')} placeholder="John Doe" />
                     </Field>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Date of birth">
                         <input type="date" className="v5-input" value={form.dob} onChange={set('dob')} />
                       </Field>
@@ -247,7 +247,7 @@ export default function Kyc() {
                     <Field label="PAN number">
                       <input className="v5-input uppercase" value={form.pan} onChange={set('pan')} placeholder="ABCDE1234F" maxLength={10} />
                     </Field>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Mobile number">
                         <input className="v5-input" value={form.mobile} onChange={set('mobile')} placeholder="+91 98765 43210" />
                       </Field>
@@ -267,7 +267,7 @@ export default function Kyc() {
                     <Field label="Address line">
                       <input className="v5-input" value={form.addressLine} onChange={set('addressLine')} placeholder="House no., street, area" />
                     </Field>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <Field label="City">
                         <input className="v5-input" value={form.city} onChange={set('city')} />
                       </Field>
@@ -312,7 +312,7 @@ export default function Kyc() {
 
                 {step === 3 && (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Occupation">
                         <select className="v5-input" value={form.occupation} onChange={set('occupation')}>
                           <option value="">Select</option>
@@ -340,7 +340,7 @@ export default function Kyc() {
                     </Field>
                     <div className="flex flex-col gap-1.5">
                       <label className="v5-body text-xs" style={{ color: SUB }}>Segments to activate</label>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                         {SEGMENTS.map((seg) => {
                           const checked = form.segments.includes(seg);
                           return (
@@ -367,7 +367,7 @@ export default function Kyc() {
                         })}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Nominee full name">
                         <input className="v5-input" value={form.nomineeName} onChange={set('nomineeName')} />
                       </Field>

@@ -706,7 +706,7 @@ export default function Learn() {
       <Sidebar />
 
       <main className="flex-1 min-w-0 relative">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-7 space-y-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-7 pb-24 lg:pb-7 space-y-10">
           {/* Header */}
           <div>
             <div className="flex items-center gap-2" style={{ color: EMERALD }}>
@@ -730,7 +730,7 @@ export default function Learn() {
 
           {/* Market-moving news */}
           <section>
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
               <h2 className="v5-display text-lg font-semibold text-slate-50">
                 What's moving the market
               </h2>

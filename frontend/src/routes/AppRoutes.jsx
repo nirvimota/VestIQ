@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 
 import Landing from '../pages/Landing';
 import Login from '../pages/Login';
@@ -23,15 +24,20 @@ import LongTerm from '../pages/Longterm';
 import Learn from '../pages/learn';
 import PaperTrading from '../pages/PaperTrading';
 
+import Navbar from '../components/common/Navbar';
+import BottomTabBar from '../components/common/BottomTabBar';
 
 export default function AppRoutes() {
   const location = useLocation();
+  const { session } = useAuth();
   // set by Dashboard's openStock() when it navigates to /stock/:symbol —
   // tells us to keep rendering the page underneath instead of replacing it
   const backgroundLocation = location.state?.backgroundLocation;
 
   return (
     <>
+      {session && <Navbar />}
+
       {/* Primary route tree. When backgroundLocation is set, this renders
           AGAINST that location instead of the current one — so e.g.
           /dashboard stays mounted underneath the /stock/:symbol popup. */}
@@ -66,6 +72,8 @@ export default function AppRoutes() {
           <Route path="/stock/:symbol" element={<ProtectedRoute><StockDetail /></ProtectedRoute>} />
         </Routes>
       )}
+
+      {session && <BottomTabBar />}
     </>
   );
 }
