@@ -22,7 +22,7 @@ import LiveMarket from '../pages/market';
 import Intraday from '../pages/intraday';
 import LongTerm from '../pages/Longterm';
 import Learn from '../pages/learn';
-import PaperTrading from '../pages/PaperTrading';
+import PaperTrading from '../pages/papertrading';
 
 import Navbar from '../components/common/Navbar';
 import BottomTabBar from '../components/common/BottomTabBar';

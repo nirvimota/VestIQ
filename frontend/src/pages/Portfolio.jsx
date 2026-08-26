@@ -95,7 +95,7 @@ function Sparkline({ data, up, width = 84, height = 32 }) {
 function SkeletonCard() {
   return (
     <div
-      className="shrink-0 w-[190px] rounded-xl px-4 py-3"
+      className="shrink-0 w-[160px] sm:w-[190px] rounded-xl px-4 py-3"
       style={{ background: CARD, border: `1px solid ${BORDER}` }}
     >
       <div className="flex items-start justify-between">
@@ -120,7 +120,7 @@ function EmptyPortfolio({ onGoToMarket }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex flex-col items-center justify-center py-24 text-center"
+      className="flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4"
     >
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
@@ -392,7 +392,7 @@ export default function Portfolio() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="v5-root min-h-screen flex relative" style={{ background: INK }}>
+    <div className="v5-root min-h-screen flex relative overflow-x-hidden" style={{ background: INK }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');
         .v5-display { font-family: 'Space Grotesk', sans-serif; }
@@ -405,6 +405,7 @@ export default function Portfolio() {
         .v5-add-btn { transition: border-color 0.15s ease, color 0.15s ease; }
         .v5-add-btn:hover { color: ${TEXT}; border-color: rgba(255,255,255,0.24); }
         .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(1.5); }
@@ -428,16 +429,16 @@ export default function Portfolio() {
       <Sidebar />
 
       <div className="flex-1 min-w-0 relative">
-        <div className="max-w-5xl mx-auto px-4 sm:px-5 py-6 lg:py-8 pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-5 py-5 sm:py-6 lg:py-8 pb-24">
 
           {/* ── Header ─────────────────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between items-start gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between items-start gap-3 sm:gap-4 mb-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-1 flex-wrap">
                 <p className="v5-mono text-xs tracking-wide uppercase" style={{ color: MUTE }}>My Portfolio</p>
                 <LiveIndicator isLive={isLive} />
               </div>
-              <h1 className="v5-display text-2xl sm:text-3xl font-bold" style={{ color: TEXT }}>
+              <h1 className="v5-display text-2xl sm:text-3xl font-bold break-words" style={{ color: TEXT }}>
                 ₹{fmtINR(totalValue)}
               </h1>
               {lastUpdated && (
@@ -481,19 +482,19 @@ export default function Portfolio() {
                         onClick={() => setSelected(idx)}
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className="v5-hold-btn v5-card shrink-0 w-[190px] text-left rounded-xl px-4 py-3"
+                        className="v5-hold-btn v5-card shrink-0 w-[150px] sm:w-[190px] text-left rounded-xl px-3.5 sm:px-4 py-3"
                         style={{ borderColor: isActive ? `${TEAL}80` : BORDER }}
                       >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="v5-mono text-sm font-medium" style={{ color: TEXT }}>{h.symbol}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="v5-mono text-sm font-medium truncate" style={{ color: TEXT }}>{h.symbol}</p>
                             <p className="v5-body text-[11px]" style={{ color: MUTE }}>{h.qty} qty</p>
                           </div>
-                          <Sparkline data={h.series} up={h.up} width={56} height={24} />
+                          <Sparkline data={h.series} up={h.up} width={48} height={24} />
                         </div>
-                        <div className="flex items-baseline justify-between mt-3">
-                          <span className="v5-mono text-sm" style={{ color: TEXT }}>₹{fmtINR(h.ltp)}</span>
-                          <span className="v5-mono text-xs" style={{ color: h.up ? TEAL : RED }}>
+                        <div className="flex items-baseline justify-between mt-3 gap-1">
+                          <span className="v5-mono text-sm truncate" style={{ color: TEXT }}>₹{fmtINR(h.ltp)}</span>
+                          <span className="v5-mono text-xs shrink-0" style={{ color: h.up ? TEAL : RED }}>
                             {h.up ? '+' : ''}{h.pnlPct.toFixed(2)}%
                           </span>
                         </div>
@@ -514,10 +515,10 @@ export default function Portfolio() {
               {active && (
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
                   {/* Chart Panel */}
-                  <div className="v5-card rounded-xl p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="v5-mono text-xs uppercase tracking-wide" style={{ color: MUTE }}>{active.name}</p>
+                  <div className="v5-card rounded-xl p-3.5 sm:p-5 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+                      <div className="min-w-0">
+                        <p className="v5-mono text-xs uppercase tracking-wide truncate" style={{ color: MUTE }}>{active.name}</p>
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={active.symbol}
@@ -525,9 +526,9 @@ export default function Portfolio() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.18 }}
-                            className="flex items-baseline gap-3 mt-1"
+                            className="flex flex-wrap items-baseline gap-2 sm:gap-3 mt-1"
                           >
-                            <h2 className="v5-mono text-2xl" style={{ color: TEXT }}>₹{fmtINR(active.ltp)}</h2>
+                            <h2 className="v5-mono text-xl sm:text-2xl" style={{ color: TEXT }}>₹{fmtINR(active.ltp)}</h2>
                             <span className="v5-mono text-sm" style={{ color: active.up ? TEAL : RED }}>
                               {active.up ? '+' : ''}{active.pnlPct.toFixed(2)}%
                             </span>
@@ -544,35 +545,37 @@ export default function Portfolio() {
                       </div>
 
                       {/* Range selector */}
-                      <div className="relative flex gap-1 rounded-lg p-1" style={{ background: INK, border: `1px solid ${BORDER}` }}>
-                        {RANGES.map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => setRange(r)}
-                            className="v5-mono relative px-2.5 py-1 text-[11px] rounded-md"
-                            style={{ color: range === r ? TEXT : MUTE }}
-                          >
-                            {range === r && (
-                              <motion.div
-                                layoutId="range-active-pill"
-                                className="absolute inset-0 rounded-md"
-                                style={{ background: '#1A2333' }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                              />
-                            )}
-                            <span className="relative">{r}</span>
-                          </button>
-                        ))}
+                      <div className="w-full sm:w-auto overflow-x-auto scrollbar-none">
+                        <div className="relative flex gap-1 rounded-lg p-1 w-max" style={{ background: INK, border: `1px solid ${BORDER}` }}>
+                          {RANGES.map((r) => (
+                            <button
+                              key={r}
+                              onClick={() => setRange(r)}
+                              className="v5-mono relative shrink-0 px-2.5 py-1 text-[11px] rounded-md"
+                              style={{ color: range === r ? TEXT : MUTE }}
+                            >
+                              {range === r && (
+                                <motion.div
+                                  layoutId="range-active-pill"
+                                  className="absolute inset-0 rounded-md"
+                                  style={{ background: '#1A2333' }}
+                                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                />
+                              )}
+                              <span className="relative">{r}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
                     {/* Chart area */}
-                    <div className="h-72 relative">
+                    <div className="h-52 sm:h-64 lg:h-72 relative">
                       {chartLoading && (
                         <div className="absolute inset-0 rounded-lg chart-shimmer" style={{ zIndex: 2 }} />
                       )}
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                        <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor={active.up ? TEAL : RED} stopOpacity={0.22} />
@@ -610,17 +613,18 @@ export default function Portfolio() {
                             tick={{ fill: MUTE, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
                             axisLine={false}
                             tickLine={false}
+                            minTickGap={16}
                           />
                           <YAxis
                             domain={[
                               (dataMin) => parseFloat((dataMin * 0.998).toFixed(2)),
                               (dataMax) => parseFloat((dataMax * 1.002).toFixed(2)),
                             ]}
-                            tick={{ fill: MUTE, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}
+                            tick={{ fill: MUTE, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
                             tickFormatter={(v) => `₹${v >= 1000 ? (v/1000).toFixed(1)+'k' : v.toFixed(0)}`}
                             axisLine={false}
                             tickLine={false}
-                            width={52}
+                            width={44}
                           />
                           <Tooltip content={<CustomChartTooltip symbol={active.symbol} />} />
                           <Area
@@ -639,21 +643,21 @@ export default function Portfolio() {
 
                     {/* Stats row */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
-                      <div>
+                      <div className="min-w-0">
                         <p className="v5-mono text-[10px] uppercase" style={{ color: MUTE }}>Avg. Price</p>
-                        <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>₹{fmtINR(active.avg)}</p>
+                        <p className="v5-mono text-sm mt-0.5 truncate" style={{ color: TEXT }}>₹{fmtINR(active.avg)}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="v5-mono text-[10px] uppercase" style={{ color: MUTE }}>Quantity</p>
-                        <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>{active.qty}</p>
+                        <p className="v5-mono text-sm mt-0.5 truncate" style={{ color: TEXT }}>{active.qty}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="v5-mono text-[10px] uppercase" style={{ color: MUTE }}>Market Val.</p>
-                        <p className="v5-mono text-sm mt-0.5" style={{ color: TEXT }}>₹{fmtINR(active.value)}</p>
+                        <p className="v5-mono text-sm mt-0.5 truncate" style={{ color: TEXT }}>₹{fmtINR(active.value)}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="v5-mono text-[10px] uppercase" style={{ color: MUTE }}>Unrealised P&amp;L</p>
-                        <p className="v5-mono text-sm mt-0.5" style={{ color: active.up ? TEAL : RED }}>
+                        <p className="v5-mono text-sm mt-0.5 truncate" style={{ color: active.up ? TEAL : RED }}>
                           {active.up ? '+' : ''}₹{fmtINR(Math.abs(active.pnl))}
                         </p>
                       </div>
@@ -687,7 +691,7 @@ export default function Portfolio() {
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-0.5 overflow-y-auto scrollbar-none">
+                      <div className="space-y-0.5 overflow-y-auto scrollbar-none max-h-[320px] lg:max-h-none">
                         {watchlist.map((w) => {
                           const up = (w.chg ?? 0) >= 0;
                           return (
@@ -695,13 +699,13 @@ export default function Portfolio() {
                               key={w.symbol}
                               whileHover={{ x: 2 }}
                               onClick={() => navigate(`/market?symbol=${w.symbol}`)}
-                              className="v5-watch-row flex items-center justify-between px-2 py-2.5 rounded-lg cursor-pointer"
+                              className="v5-watch-row flex items-center justify-between gap-2 px-2 py-2.5 rounded-lg cursor-pointer"
                             >
-                              <div>
-                                <p className="v5-mono text-sm" style={{ color: TEXT }}>{w.symbol}</p>
-                                <p className="v5-body text-[11px]" style={{ color: MUTE }}>{w.name}</p>
+                              <div className="min-w-0">
+                                <p className="v5-mono text-sm truncate" style={{ color: TEXT }}>{w.symbol}</p>
+                                <p className="v5-body text-[11px] truncate" style={{ color: MUTE }}>{w.name}</p>
                               </div>
-                              <div className="text-right">
+                              <div className="text-right shrink-0">
                                 <p className="v5-mono text-sm" style={{ color: TEXT }}>₹{fmtINR(w.ltp)}</p>
                                 <p className="v5-mono text-[11px]" style={{ color: up ? TEAL : RED }}>
                                   {up ? '+' : ''}{Number(w.chg).toFixed(2)}%

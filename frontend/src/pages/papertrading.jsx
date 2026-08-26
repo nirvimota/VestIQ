@@ -55,10 +55,10 @@ function fmtINR(n) {
 
 function StatCard({ label, value, sub, tone }) {
     return (
-        <div className="v5-card rounded-xl p-4">
-            <p className={`v5-mono text-xs ${TXT_MUTED}`}>{label}</p>
+        <div className="v5-card rounded-xl p-3 sm:p-4">
+            <p className={`v5-mono text-[11px] sm:text-xs ${TXT_MUTED}`}>{label}</p>
             <p
-                className="v5-display mt-1 text-xl font-semibold"
+                className="v5-display mt-1 text-lg sm:text-xl font-semibold break-words"
                 style={{ color: tone || "rgba(255,255,255,0.85)" }}
             >
                 {value}
@@ -80,46 +80,88 @@ function HoldingsTable({ holdings }) {
     }
 
     return (
-        <div className="v5-card overflow-x-auto rounded-xl text-white">
-            <table className={`w-full text-left text-sm ${TXT}`}>
-                <thead>
-                    <tr
-                        className={`v5-mono text-xs ${TXT_MUTED}`}
-                        style={{ borderBottom: `1px solid ${BORDER}` }}
-                    >
-                        <th className="px-4 py-3 font-normal">Symbol</th>
-                        <th className="px-4 py-3 font-normal">Qty</th>
-                        <th className="px-4 py-3 font-normal">Avg Price</th>
-                        <th className="px-4 py-3 font-normal">LTP</th>
-                        <th className="px-4 py-3 font-normal">Invested</th>
-                        <th className="px-4 py-3 font-normal">P&amp;L</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {holdings.map((h) => {
-                        const isUp = h.pnl >= 0;
-                        return (
-                            <tr key={h.symbol} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                                <td className="v5-body px-4 py-3 font-medium">{h.symbol}</td>
-                                <td className="v5-mono px-4 py-3">{h.quantity}</td>
-                                <td className="v5-mono px-4 py-3">{fmtINR(h.avg_price)}</td>
-                                <td className="v5-mono px-4 py-3">{fmtINR(h.current_price)}</td>
-                                <td className="v5-mono px-4 py-3">{fmtINR(h.invested)}</td>
-                                <td
-                                    className="v5-mono px-4 py-3 font-medium text-white/85"
+        <>
+            {/* Mobile: stacked cards (nothing gets clipped) */}
+            <div className="space-y-2 sm:hidden">
+                {holdings.map((h) => {
+                    const isUp = h.pnl >= 0;
+                    return (
+                        <div key={h.symbol} className="v5-card rounded-xl p-3.5">
+                            <div className="flex items-center justify-between">
+                                <span className="v5-body font-medium text-sm text-white/90">{h.symbol}</span>
+                                <span
+                                    className="v5-mono flex items-center gap-1 text-sm font-medium"
                                     style={{ color: isUp ? EMERALD : ROSE }}
                                 >
-                                    <span className="flex items-center gap-1">
-                                        {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                        {fmtINR(h.pnl)} ({h.pnl_pct}%)
-                                    </span>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+                                    {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                    {fmtINR(h.pnl)} ({h.pnl_pct}%)
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2 mt-3">
+                                <div>
+                                    <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Qty</p>
+                                    <p className="v5-mono text-xs mt-0.5">{h.quantity}</p>
+                                </div>
+                                <div>
+                                    <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Avg</p>
+                                    <p className="v5-mono text-xs mt-0.5">{fmtINR(h.avg_price)}</p>
+                                </div>
+                                <div>
+                                    <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>LTP</p>
+                                    <p className="v5-mono text-xs mt-0.5">{fmtINR(h.current_price)}</p>
+                                </div>
+                                <div>
+                                    <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Invested</p>
+                                    <p className="v5-mono text-xs mt-0.5">{fmtINR(h.invested)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* sm and up: full table */}
+            <div className="v5-card hidden sm:block overflow-x-auto rounded-xl text-white">
+                <table className={`w-full text-left text-sm ${TXT}`}>
+                    <thead>
+                        <tr
+                            className={`v5-mono text-xs ${TXT_MUTED}`}
+                            style={{ borderBottom: `1px solid ${BORDER}` }}
+                        >
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Symbol</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Qty</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Avg Price</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">LTP</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Invested</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">P&amp;L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {holdings.map((h) => {
+                            const isUp = h.pnl >= 0;
+                            return (
+                                <tr key={h.symbol} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                                    <td className="v5-body px-4 py-3 font-medium whitespace-nowrap">{h.symbol}</td>
+                                    <td className="v5-mono px-4 py-3 whitespace-nowrap">{h.quantity}</td>
+                                    <td className="v5-mono px-4 py-3 whitespace-nowrap">{fmtINR(h.avg_price)}</td>
+                                    <td className="v5-mono px-4 py-3 whitespace-nowrap">{fmtINR(h.current_price)}</td>
+                                    <td className="v5-mono px-4 py-3 whitespace-nowrap">{fmtINR(h.invested)}</td>
+                                    <td
+                                        className="v5-mono px-4 py-3 font-medium text-white/85 whitespace-nowrap"
+                                        style={{ color: isUp ? EMERALD : ROSE }}
+                                    >
+                                        <span className="flex items-center gap-1">
+                                            {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                            {fmtINR(h.pnl)} ({h.pnl_pct}%)
+                                        </span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
 
@@ -133,51 +175,98 @@ function OrdersTable({ orders }) {
     }
 
     return (
-        <div className="v5-card overflow-x-auto rounded-xl text-white/85">
-            <table className={`w-full text-left text-sm ${TXT}`}>
-                <thead>
-                    <tr
-                        className={`v5-mono text-xs ${TXT_MUTED}`}
-                        style={{ borderBottom: `1px solid ${BORDER}` }}
-                    >
-                        <th className="px-4 py-3 font-normal">Symbol</th>
-                        <th className="px-4 py-3 font-normal">Side</th>
-                        <th className="px-4 py-3 font-normal">Qty</th>
-                        <th className="px-4 py-3 font-normal">Price</th>
-                        <th className="px-4 py-3 font-normal">Type</th>
-                        <th className="px-4 py-3 font-normal">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {orders.map((o) => (
-                        <tr key={o.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                            <td className="v5-body px-4 py-3 font-medium">{o.symbol}</td>
-                            <td className="px-4 py-3">
-                                <span
-                                    className="v5-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                                    style={{
-                                        background:
-                                            o.side === "buy" ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)",
-                                        color: o.side === "buy" ? EMERALD : ROSE,
-                                    }}
-                                >
-                                    {o.side === "buy" ? (
-                                        <ArrowUpRight size={11} />
-                                    ) : (
-                                        <ArrowDownRight size={11} />
-                                    )}
-                                    {o.side}
-                                </span>
-                            </td>
-                            <td className="v5-mono px-4 py-3">{o.quantity}</td>
-                            <td className="v5-mono px-4 py-3">{fmtINR(o.price)}</td>
-                            <td className={`v5-mono px-4 py-3 ${TXT_MUTED}`}>{o.order_type}</td>
-                            <td className={`v5-mono px-4 py-3 ${TXT_MUTED}`}>{o.status}</td>
+        <>
+            {/* Mobile: stacked cards */}
+            <div className="space-y-2 sm:hidden">
+                {orders.map((o) => (
+                    <div key={o.id} className="v5-card rounded-xl p-3.5">
+                        <div className="flex items-center justify-between">
+                            <span className="v5-body font-medium text-sm text-white/90">{o.symbol}</span>
+                            <span
+                                className="v5-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                style={{
+                                    background:
+                                        o.side === "buy" ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)",
+                                    color: o.side === "buy" ? EMERALD : ROSE,
+                                }}
+                            >
+                                {o.side === "buy" ? (
+                                    <ArrowUpRight size={11} />
+                                ) : (
+                                    <ArrowDownRight size={11} />
+                                )}
+                                {o.side}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 mt-3">
+                            <div>
+                                <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Qty</p>
+                                <p className="v5-mono text-xs mt-0.5">{o.quantity}</p>
+                            </div>
+                            <div>
+                                <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Price</p>
+                                <p className="v5-mono text-xs mt-0.5">{fmtINR(o.price)}</p>
+                            </div>
+                            <div>
+                                <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Type</p>
+                                <p className={`v5-mono text-xs mt-0.5 ${TXT_MUTED}`}>{o.order_type}</p>
+                            </div>
+                            <div>
+                                <p className={`v5-mono text-[10px] ${TXT_MUTED}`}>Status</p>
+                                <p className={`v5-mono text-xs mt-0.5 ${TXT_MUTED}`}>{o.status}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* sm and up: full table */}
+            <div className="v5-card hidden sm:block overflow-x-auto rounded-xl text-white/85">
+                <table className={`w-full text-left text-sm ${TXT}`}>
+                    <thead>
+                        <tr
+                            className={`v5-mono text-xs ${TXT_MUTED}`}
+                            style={{ borderBottom: `1px solid ${BORDER}` }}
+                        >
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Symbol</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Side</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Qty</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Price</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Type</th>
+                            <th className="px-4 py-3 font-normal whitespace-nowrap">Status</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        {orders.map((o) => (
+                            <tr key={o.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
+                                <td className="v5-body px-4 py-3 font-medium whitespace-nowrap">{o.symbol}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                    <span
+                                        className="v5-mono inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                        style={{
+                                            background:
+                                                o.side === "buy" ? "rgba(16,185,129,0.1)" : "rgba(244,63,94,0.1)",
+                                            color: o.side === "buy" ? EMERALD : ROSE,
+                                        }}
+                                    >
+                                        {o.side === "buy" ? (
+                                            <ArrowUpRight size={11} />
+                                        ) : (
+                                            <ArrowDownRight size={11} />
+                                        )}
+                                        {o.side}
+                                    </span>
+                                </td>
+                                <td className="v5-mono px-4 py-3 whitespace-nowrap">{o.quantity}</td>
+                                <td className="v5-mono px-4 py-3 whitespace-nowrap">{fmtINR(o.price)}</td>
+                                <td className={`v5-mono px-4 py-3 whitespace-nowrap ${TXT_MUTED}`}>{o.order_type}</td>
+                                <td className={`v5-mono px-4 py-3 whitespace-nowrap ${TXT_MUTED}`}>{o.status}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
 function StockChartCard({ symbol, onSelectSymbol }) {
@@ -269,7 +358,7 @@ function StockChartCard({ symbol, onSelectSymbol }) {
 
     if (!symbol) {
         return (
-            <div className="v5-card rounded-xl p-8 text-center text-white/85">
+            <div className="v5-card rounded-xl p-6 sm:p-8 text-center text-white/85">
                 <BarChart2 size={32} className="mx-auto mb-2 opacity-30 text-emerald-400" />
                 <p className="v5-display text-base font-medium text-white/80">Interactive Stock Chart</p>
                 <p className={`v5-body text-xs mt-1 ${TXT_MUTED}`}>
@@ -288,20 +377,20 @@ function StockChartCard({ symbol, onSelectSymbol }) {
     const gradientId = `colorPrice_${symbol.replace(/[^a-zA-Z0-9]/g, "")}`;
 
     return (
-        <div className="v5-card rounded-xl p-5 space-y-4">
+        <div className="v5-card rounded-xl p-3 sm:p-5 space-y-4">
             {/* Header / Info bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3" style={{ borderColor: BORDER }}>
-                <div>
-                    <div className="flex items-center gap-2">
-                        <h3 className="v5-display text-lg font-bold text-white/90">{symbol}</h3>
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="v5-display text-lg font-bold text-white/90 shrink-0">{symbol}</h3>
                         {quote?.name && (
-                            <span className="v5-body text-xs text-white/50 truncate max-w-[200px]">
+                            <span className="v5-body text-xs text-white/50 truncate max-w-[110px] xs:max-w-[160px] sm:max-w-[200px]">
                                 {quote.name}
                             </span>
                         )}
                     </div>
-                    <div className="flex items-baseline gap-2 mt-0.5">
-                        <span className="v5-mono text-xl font-bold text-white">
+                    <div className="flex flex-wrap items-baseline gap-2 mt-0.5">
+                        <span className="v5-mono text-lg sm:text-xl font-bold text-white">
                             {fmtINR(quote?.price || lastPrice)}
                         </span>
                         <span
@@ -317,12 +406,12 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                 </div>
 
                 {/* Timeframe Selector */}
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border" style={{ borderColor: BORDER }}>
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border shrink-0" style={{ borderColor: BORDER }}>
                     {Object.keys(TF_CONFIG).map((tf) => (
                         <button
                             key={tf}
                             onClick={() => setTimeframe(tf)}
-                            className="v5-mono text-xs px-2.5 py-1 rounded transition-colors"
+                            className="v5-mono text-xs px-2 sm:px-2.5 py-1 rounded transition-colors"
                             style={{
                                 background: timeframe === tf ? "rgba(16,185,129,0.2)" : "transparent",
                                 color: timeframe === tf ? EMERALD : "rgba(255,255,255,0.5)",
@@ -337,19 +426,19 @@ function StockChartCard({ symbol, onSelectSymbol }) {
 
             {/* Chart Body */}
             {loading ? (
-                <div className="h-64 flex items-center justify-center">
+                <div className="h-48 sm:h-64 flex items-center justify-center">
                     <Activity size={24} className="animate-spin text-emerald-400 opacity-60" />
                 </div>
             ) : error ? (
-                <div className="h-64 flex items-center justify-center text-xs text-rose-400">
-                    <AlertTriangle size={14} className="mr-1.5" /> {error}
+                <div className="h-48 sm:h-64 flex items-center justify-center text-xs text-rose-400 text-center px-4">
+                    <AlertTriangle size={14} className="mr-1.5 shrink-0" /> {error}
                 </div>
             ) : chartData.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-xs text-white/40">
+                <div className="h-48 sm:h-64 flex items-center justify-center text-xs text-white/40 text-center px-4">
                     No historical chart data found for {symbol}
                 </div>
             ) : (
-                <div className="h-64 w-full">
+                <div className="h-48 sm:h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
@@ -364,12 +453,14 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                                 stroke="rgba(255,255,255,0.3)"
                                 fontSize={10}
                                 tickLine={false}
+                                minTickGap={20}
                             />
                             <YAxis
                                 domain={["auto", "auto"]}
                                 stroke="rgba(255,255,255,0.3)"
                                 fontSize={10}
                                 tickLine={false}
+                                width={44}
                                 tickFormatter={(val) => `₹${val}`}
                             />
                             <Tooltip
@@ -398,15 +489,15 @@ function StockChartCard({ symbol, onSelectSymbol }) {
 
             {/* AI Prediction & Signal Engine Card */}
             <div
-                className="rounded-xl p-4 border"
+                className="rounded-xl p-3 sm:p-4 border"
                 style={{
                     background: "rgba(16,185,129,0.03)",
                     borderColor: "rgba(16,185,129,0.18)",
                 }}
             >
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2">
-                        <Sparkles size={16} className="text-emerald-400" />
+                        <Sparkles size={16} className="text-emerald-400 shrink-0" />
                         <h4 className="v5-display text-sm font-semibold text-white/90">
                             xAI Grok Prediction &amp; Signals
                         </h4>
@@ -442,7 +533,7 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                             {prediction.timeframe_outlook}
                         </p>
 
-                        <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 pt-1">
                             <div className="bg-white/5 p-2.5 rounded-lg border" style={{ borderColor: BORDER }}>
                                 <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
                                     <Target size={13} />
@@ -468,9 +559,9 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                                 <p className="v5-mono text-[11px] text-white/40 mb-1">Key Technical Drivers:</p>
                                 <ul className="space-y-1">
                                     {prediction.signals.map((sig, idx) => (
-                                        <li key={idx} className="v5-body text-[11px] text-white/60 flex items-center gap-1.5">
-                                            <span className="w-1 h-1 rounded-full bg-emerald-400" />
-                                            {sig}
+                                        <li key={idx} className="v5-body text-[11px] text-white/60 flex items-start gap-1.5">
+                                            <span className="w-1 h-1 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                            <span>{sig}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -478,7 +569,7 @@ function StockChartCard({ symbol, onSelectSymbol }) {
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="v5-body text-xs text-white/50">
                             Please sign in or refresh to generate live AI technical predictions.
                         </p>
@@ -615,7 +706,7 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
     const inputClasses = `v5-body w-full rounded-lg px-3 py-2 text-sm ${TXT} outline-none placeholder:text-white/30`;
 
     return (
-        <form onSubmit={handleSubmit} className="v5-card space-y-4 rounded-xl p-5">
+        <form onSubmit={handleSubmit} className="v5-card space-y-4 rounded-xl p-4 sm:p-5">
             <div className="flex gap-2">
                 {["buy", "sell"].map((s) => (
                     <button
@@ -694,6 +785,8 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
                             borderRadius: "10px",
                             marginTop: "4px",
                             overflow: "hidden",
+                            maxHeight: "260px",
+                            overflowY: "auto",
                             boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
                         }}
                     >
@@ -707,6 +800,7 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
                                     display: "flex",
                                     justifyContent: "space-between",
                                     alignItems: "center",
+                                    gap: "8px",
                                     borderBottom:
                                         i < suggestions.length - 1
                                             ? `1px solid rgba(255,255,255,0.05)`
@@ -722,7 +816,7 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
                             >
                                 <span
                                     className="v5-mono"
-                                    style={{ fontSize: "13px", color: "rgba(255,255,255,0.9)", fontWeight: 500 }}
+                                    style={{ fontSize: "13px", color: "rgba(255,255,255,0.9)", fontWeight: 500, flexShrink: 0 }}
                                 >
                                     {(s.symbol || "").split("/")[0].split(":")[0]}
                                 </span>
@@ -826,7 +920,7 @@ function OrderForm({ selectedSymbol, onSelectSymbol, onOrderPlaced }) {
 
             {error && (
                 <p className="v5-body flex items-center gap-1.5 text-xs" style={{ color: ROSE }}>
-                    <AlertTriangle size={12} />
+                    <AlertTriangle size={12} className="shrink-0" />
                     {error}
                 </p>
             )}
@@ -891,7 +985,7 @@ export default function PaperTrading() {
     }
 
     return (
-        <div className={`v5-root min-h-screen flex relative ${TXT}`} style={{ background: INK }}>
+        <div className={`v5-root min-h-screen flex relative overflow-x-hidden ${TXT}`} style={{ background: INK }}>
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
         .v5-display { font-family: 'Space Grotesk', sans-serif; }
@@ -905,7 +999,7 @@ export default function PaperTrading() {
             <Sidebar />
 
             <main className="flex-1 min-w-0 relative">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-7 pb-24 lg:pb-7 space-y-8">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-5 sm:py-6 lg:py-7 pb-24 lg:pb-7 space-y-6 sm:space-y-8">
                     {/* Header */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -913,17 +1007,17 @@ export default function PaperTrading() {
                                 <Wallet size={18} />
                                 <span className="v5-mono text-sm font-medium">Paper Trading</span>
                             </div>
-                            <h1 className="v5-display mt-1 text-2xl font-semibold sm:text-3xl">
+                            <h1 className="v5-display mt-1 text-xl sm:text-2xl lg:text-3xl font-semibold">
                                 Practice sandbox
                             </h1>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             {account && !loading && (
                                 <span
                                     className="v5-mono flex items-center gap-1.5 text-xs"
                                     style={{ color: account.expired ? ROSE : AMBER }}
                                 >
-                                    <Clock size={12} />
+                                    <Clock size={12} className="shrink-0" />
                                     {account.expired
                                         ? "Account expired"
                                         : `${account.days_remaining} days remaining`}
@@ -956,7 +1050,7 @@ export default function PaperTrading() {
                     ) : (
                         <>
                             {/* Portfolio stats */}
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                                 <StatCard label="CASH BALANCE" value={fmtINR(portfolio?.balance)} />
                                 <StatCard label="INVESTED" value={fmtINR(portfolio?.invested_value)} />
                                 <StatCard
