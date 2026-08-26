@@ -11,7 +11,26 @@ import routes from './routes/index.js';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: env.clientOrigin }));
+
+// Support comma-separated origins e.g. "https://vestiq.vercel.app,https://vestiq-abc.vercel.app"
+const allowedOrigins = env.clientOrigin
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server (no origin) and listed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
 app.use('/api', apiRateLimiter, routes);
