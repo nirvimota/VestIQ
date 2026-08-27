@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TradingContext } from "../context/TradingContext";
+import { TradingContext } from "../context/tradingContext";
 import { useAuth } from "../context/AuthContext";
 import { listOrders } from "../services/orderApi";
 import Sidebar from "../components/layout/Sidebar";
