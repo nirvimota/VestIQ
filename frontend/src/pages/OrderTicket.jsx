@@ -2,7 +2,7 @@
 import { useContext, useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { TradingContext } from "../context/TradingContext";
+import { TradingContext } from "../context/tradingContext";
 import { getStockQuote } from "../services/stockApi";
 import { placeOrder } from "../services/orderApi";
 import { useAuth } from "../context/AuthContext";
