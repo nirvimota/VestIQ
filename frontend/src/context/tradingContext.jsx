@@ -1,4 +1,4 @@
-// C:\nirvi\vestIQ\frontend\src\context\TradingContext.jsx
+// C:\nirvi\vestIQ\frontend\src\context\tradingContext.jsx
 import { createContext, useState, useCallback } from "react";
 
 export const TradingContext = createContext({
