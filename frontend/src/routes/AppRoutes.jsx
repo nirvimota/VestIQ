@@ -15,7 +15,7 @@ import OrderTicket from '../pages/OrderTicket';
 import Portfolio from '../pages/Portfolio';
 import OrderHistory from '../pages/OrderHistory';
 import Alerts from '../pages/Alerts';
-import Profile from '../pages/Profile';
+import Profile from '../pages/profile';
 import Fundsipo from '../pages/Fundsipo';
 import NotFound from '../pages/NotFound';
 import LiveMarket from '../pages/market';
